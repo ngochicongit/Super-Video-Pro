@@ -312,7 +312,7 @@ Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
 
 ### Small delivery task - Create and push the GitHub repository
 
-Status: READY FOR USER ACTION
+Status: PUSH COMPLETE; HOSTED CI AWAITING AUTHENTICATED CONFIRMATION
 
 Goal: publish the existing local `main` branch so the hosted verification workflow can run. The current local commit is `bd5b805`; no Git remote is configured yet.
 
@@ -327,9 +327,22 @@ Completion checklist:
 - [ ] Protect `main` after the first green run: require pull requests and require the `verify` status check before merge.
 - [ ] Mark this task DONE only when `git status` is clean, `main` tracks `origin/main`, and the hosted `Verify` run is green.
 
+Verified on 2026-08-25: local `main` is clean, tracks `origin/main`, and both resolve to commit `5d7535d`. The repository is private and the available browser session is not authenticated, so the hosted Actions result remains deliberately unconfirmed.
+
 Safety rules:
 
 - Never place access tokens, signing private keys, certificates, cookies or `.env` values in the repository.
 - Do not use `git push --force` for the initial publication.
 - If GitHub created an initial commit by mistake, stop and reconcile histories instead of forcing the local branch over it.
 - Release installers and runtime tools remain ignored; publish them later through GitHub Releases or another signed release channel, not normal Git history.
+
+### Evidence infrastructure before Composition
+
+Status: IMPLEMENTED LOCALLY; COLLECTION NOT YET ACTIVATED
+
+- Added SQLite migration v2 with daily aggregate counters only. The table stores `day`, a closed event name and a count; it cannot store URLs, file paths, media titles or arbitrary metadata.
+- Added a closed event vocabulary for composition intent, multi-input intent, completed exports and builder abandonment.
+- Locked the initial dogfooding gate before collecting data: at least 3 active days, 10 multi-input intents, 5 completed exports and no more than 50% builder abandonment.
+- The gate evaluator defaults to closed and has coverage for aggregation and below-threshold behavior.
+- No renderer IPC can submit evidence yet, preventing untrusted or accidental arbitrary event injection. Recording will be attached only to explicit Composition entry/builder actions when that minimal surface is approved.
+- Composition, ProcessingQueue and Visual Editor remain STOPPED; infrastructure existence is not evidence that the thresholds have been met.
