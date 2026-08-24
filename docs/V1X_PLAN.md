@@ -327,7 +327,7 @@ Completion checklist:
 - [ ] Protect `main` after the first green run: require pull requests and require the `verify` status check before merge.
 - [ ] Mark this task DONE only when `git status` is clean, `main` tracks `origin/main`, and the hosted `Verify` run is green.
 
-Verified on 2026-08-25: publication moved to the Public repository `ngochicongit/Super-Video-Pro`. Hosted clean-checkout runs exposed bootstrap assumptions in sequence: premature pnpm caching, missing ignored runtime tools, Chocolatey shims, and shared FFmpeg builds requiring adjacent DLLs. CI now installs dependencies in order and runtime staging resolves shims, copies required sibling DLLs, and executes the staged binary itself before verification. Hosted status remains pending until the repaired run completes.
+Verified on 2026-08-25: publication moved to the Public repository `ngochicongit/Super-Video-Pro`. Hosted clean-checkout runs exposed bootstrap assumptions in sequence: premature pnpm caching, missing ignored runtime tools, Chocolatey shims, and the non-portable `ffmpeg-full` shared build. CI now uses the standard portable FFmpeg package; runtime staging resolves shims, copies any sibling DLLs, and executes the staged binary itself before verification. Hosted status remains pending until the repaired run completes.
 
 Safety rules:
 

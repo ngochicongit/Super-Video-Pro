@@ -24,7 +24,7 @@ jobs:
         run: npm install --global pnpm@11.19.0
 
       - name: Install FFmpeg fixtures dependency
-        run: choco install ffmpeg-full --yes --no-progress
+        run: choco install ffmpeg --yes --no-progress
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
