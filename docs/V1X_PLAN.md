@@ -309,3 +309,27 @@ Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
 - Phase 2b requires Windows/macOS signing identities and CI secrets; automatic installation stays disabled until that work is complete.
 - Evidence collection and thresholds must be implemented before Composition is opened.
 - ProcessingQueue requires a real Composition workflow; Visual Editor requires the previously agreed usage thresholds. These conditional STOP gates remain active.
+
+### Small delivery task - Create and push the GitHub repository
+
+Status: READY FOR USER ACTION
+
+Goal: publish the existing local `main` branch so the hosted verification workflow can run. The current local commit is `bd5b805`; no Git remote is configured yet.
+
+Completion checklist:
+
+- [ ] Create a new empty GitHub repository. Do not initialize it with README, `.gitignore` or license because those files already exist locally.
+- [ ] Choose repository visibility intentionally (`Private` is recommended until signing/update infrastructure is ready).
+- [ ] Copy the repository HTTPS URL and add it locally with `git remote add origin <repository-url>`.
+- [ ] Confirm the target using `git remote -v`; it must point only to the intended repository.
+- [ ] Push with `git push -u origin main` and complete browser/device authentication if Git requests it.
+- [ ] Open the GitHub Actions tab and confirm the `Verify` workflow starts and completes successfully.
+- [ ] Protect `main` after the first green run: require pull requests and require the `verify` status check before merge.
+- [ ] Mark this task DONE only when `git status` is clean, `main` tracks `origin/main`, and the hosted `Verify` run is green.
+
+Safety rules:
+
+- Never place access tokens, signing private keys, certificates, cookies or `.env` values in the repository.
+- Do not use `git push --force` for the initial publication.
+- If GitHub created an initial commit by mistake, stop and reconcile histories instead of forcing the local branch over it.
+- Release installers and runtime tools remain ignored; publish them later through GitHub Releases or another signed release channel, not normal Git history.
