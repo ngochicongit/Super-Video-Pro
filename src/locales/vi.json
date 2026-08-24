@@ -70,5 +70,14 @@
   "window_minimize": "Thu nhỏ",
   "window_maximize": "Phóng to",
   "window_restore": "Khôi phục",
-  "window_close": "Đóng"
+  "window_close": "Đóng",
+  "composition_research": "Nghiên cứu tính năng ghép video",
+  "evidence_privacy": "Chỉ lưu số đếm tổng hợp trên máy. Không lưu hoặc gửi liên kết, đường dẫn hay tên media.",
+  "evidence_opt_in": "Cho phép ghi nhận nhu cầu sản phẩm cục bộ",
+  "composition_multi_interest": "Tôi cần ghép nhiều video",
+  "export_evidence": "Xuất số liệu cục bộ",
+  "evidence_enabled": "Đã bật ghi nhận cục bộ.",
+  "evidence_disabled": "Đã tắt ghi nhận cục bộ.",
+  "evidence_recorded": "Đã ghi nhận nhu cầu trên thiết bị này.",
+  "evidence_progress": "Tiến độ ngưỡng multi-input:"
 }

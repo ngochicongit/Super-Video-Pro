@@ -340,11 +340,12 @@ Safety rules:
 
 ### Evidence infrastructure before Composition
 
-Status: IMPLEMENTED LOCALLY; COLLECTION NOT YET ACTIVATED
+Status: IMPLEMENTED ON FEATURE BRANCH; OPT-IN COLLECTION ACTIVATED
 
 - Added SQLite migration v2 with daily aggregate counters only. The table stores `day`, a closed event name and a count; it cannot store URLs, file paths, media titles or arbitrary metadata.
 - Added a closed event vocabulary for composition intent, multi-input intent, completed exports and builder abandonment.
 - Locked the initial dogfooding gate before collecting data: at least 3 active days, 10 multi-input intents, 5 completed exports and no more than 50% builder abandonment.
 - The gate evaluator defaults to closed and has coverage for aggregation and below-threshold behavior.
-- No renderer IPC can submit evidence yet, preventing untrusted or accidental arbitrary event injection. Recording will be attached only to explicit Composition entry/builder actions when that minimal surface is approved.
+- Added an explicit, default-OFF local evidence opt-in and a visible Composition research probe. Recording is possible only after opt-in and only through a strict `single`/`multi` intent IPC schema; arbitrary fields such as URLs are rejected.
+- Added an on-demand TXT export containing aggregate counts, active-day counts, bounce rate and gate progress. The export contains no URLs, paths, media titles or file content.
 - Composition, ProcessingQueue and Visual Editor remain STOPPED; infrastructure existence is not evidence that the thresholds have been met.

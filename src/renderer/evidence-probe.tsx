@@ -1,0 +1,6 @@
+import {useState} from "react";
+import {api,type EvidenceGate} from "./api";
+import {t} from "./i18n";
+import {useAppStore} from "./store";
+
+export function EvidenceProbe(){const {settings,saveSettings}=useAppStore();const [gate,setGate]=useState<EvidenceGate>();const [message,setMessage]=useState("");async function optIn(enabled:boolean){await saveSettings({collectProductEvidence:enabled});setMessage(enabled?t("evidence_enabled"):t("evidence_disabled"));}async function record(){await api.evidence.recordIntent("multi");setGate(await api.evidence.gate());setMessage(t("evidence_recorded"));}return <section className="evidence-probe"><div><strong>{t("composition_research")}</strong><span>{t("evidence_privacy")}</span></div><label><input type="checkbox" checked={settings?.collectProductEvidence??false} onChange={event=>void optIn(event.target.checked)}/>{t("evidence_opt_in")}</label><div className="evidence-actions"><button type="button" disabled={!settings?.collectProductEvidence} onClick={()=>void record()}>{t("composition_multi_interest")}</button><button type="button" onClick={()=>void api.evidence.export()}>{t("export_evidence")}</button></div>{message&&<span>{message}</span>}{gate&&<span>{t("evidence_progress")} {gate.summary["composition.multi_input_intent"]?.count??0}/{gate.thresholds.minimumMultiInputIntents}</span>}</section>}
