@@ -1,0 +1,40 @@
+name: Verify
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install pnpm
+        run: npm install --global pnpm@11.19.0
+
+      - name: Install FFmpeg fixtures dependency
+        run: choco install ffmpeg-full --yes --no-progress
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify source, tests, and production build
+        run: pnpm verify
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod
+
+      - name: Record codebase metrics
+        run: pnpm metrics

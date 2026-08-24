@@ -1,0 +1,16 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import type {MediaResource} from "../../shared/contracts.js";
+import {outputName,releaseOutput,reserveOutput} from "../download-output.js";
+import type {Progress} from "../download-types.js";
+import {resolveExternalOutput} from "../external-output.js";
+import {runTool,toolAvailable,ytDlpRuntimeArgs,ytDlpSiteArgs} from "../tools.js";
+
+export function parseYtDlpProgress(line:string):Progress|null{const match=line.trim().match(/^SVP:(\d+)\|([^|]+)\|([^|]+)$/);if(!match)return null;const downloaded=Number(match[1]);const exact=Number(match[3]);const estimate=Number(match[2]);const total=Number.isFinite(exact)&&exact>0?exact:Number.isFinite(estimate)&&estimate>0?estimate:null;return Number.isFinite(downloaded)?{bytesDownloaded:downloaded,totalBytes:total}:null;}
+
+export async function downloadExternal(resource:MediaResource,destinationDir:string,signal:AbortSignal,onProgress:(value:Progress)=>void,options:{cookiesFromBrowser?:"none"|"edge"|"chrome"|"firefox"}={}){
+  await fs.mkdir(destinationDir,{recursive:true});const variant=resource.variants[0];if(!variant)throw new Error("No media variant");
+  if(variant.protocol==="external"){if(!await toolAvailable("yt-dlp"))throw Object.assign(new Error("yt-dlp is required for this URL"),{code:"TOOL_MISSING"});const output=path.join(destinationDir,"%(title).180B [%(id)s].%(ext)s");const cookieArgs=options.cookiesFromBrowser&&options.cookiesFromBrowser!=="none"?["--cookies-from-browser",options.cookiesFromBrowser]:[];const format=variant.id==="best"?"bestvideo*+bestaudio/best":`${variant.id}+bestaudio/${variant.id}`;const baseArgs=[...ytDlpRuntimeArgs(),...ytDlpSiteArgs(resource.sourceUrl),"--newline","--no-playlist","--continue","--progress-template","download:SVP:%(progress.downloaded_bytes)s|%(progress.total_bytes_estimate)s|%(progress.total_bytes)s","--print","after_move:filepath","-f",format,"-o",output,resource.sourceUrl];const run=(cookies:string[])=>runTool("yt-dlp",[...cookies,...baseArgs],{signal,onLine:line=>{const progress=parseYtDlpProgress(line);if(progress)onProgress(progress);}});const startedAt=Date.now();let result=await run(cookieArgs);if(result.code!==0&&cookieArgs.length&&/Could not copy .*cookie database/i.test(result.stderr))result=await run([]);if(result.code!==0)throw new Error(result.stderr||"yt-dlp failed");const candidates=result.stdout.split(/\r?\n/).map(value=>value.trim()).filter(Boolean);const final=await resolveExternalOutput(destinationDir,candidates,resource.sourceUrl,startedAt);return{path:final,size:(await fs.stat(final)).size};}
+  if(variant.protocol==="hls"||variant.protocol==="dash"){if(!await toolAvailable("ffmpeg"))throw Object.assign(new Error("FFmpeg is required for HLS/DASH"),{code:"TOOL_MISSING"});const final=await reserveOutput(destinationDir,outputName(resource,".mp4"));const partial=`${final}.part.mp4`;try{const result=await runTool("ffmpeg",["-y","-i",variant.url,"-c","copy","-f","mp4",partial],{signal});if(result.code!==0)throw new Error(result.stderr||"FFmpeg failed");await fs.rename(partial,final);return{path:final,size:(await fs.stat(final)).size};}finally{releaseOutput(final);}}
+  throw new Error(`Unsupported protocol ${variant.protocol}`);
+}

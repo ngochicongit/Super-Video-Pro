@@ -1,0 +1,55 @@
+{
+  "name": "super-video-pro",
+  "version": "1.2.8",
+  "packageManager": "pnpm@11.19.0",
+  "private": true,
+  "description": "Local-first desktop video download manager",
+  "author": "Super Video Pro",
+  "main": "dist-electron/main/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"tsc -p tsconfig.electron.json --watch --preserveWatchOutput\" \"wait-on tcp:5173 file:dist-electron/main/index.js && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "build": "tsc -p tsconfig.electron.json && node scripts/copy-preload.mjs && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke:real": "pnpm build && node scripts/real-site-smoke.mjs",
+    "package": "pnpm verify && node scripts/prepare-tools.mjs && pnpm build && electron-builder --win nsis",
+    "postpackage": "pnpm task:cleanup",
+    "task:cleanup": "node scripts/cleanup-task-artifacts.mjs",
+    "verify": "pnpm typecheck && pnpm test && pnpm build",
+    "metrics": "node scripts/codebase-metrics.mjs"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9",
+    "nanoid": "6.0.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.4.3",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.1.0",
+    "concurrently": "10.0.5",
+    "cross-env": "10.1.0",
+    "electron": "43.4.1",
+    "electron-builder": "26.15.3",
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
+    "vitest": "4.1.11",
+    "wait-on": "9.1.0"
+  },
+  "build": {
+    "appId": "com.supervideopro.app",
+    "productName": "Super Video Pro",
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "dist-electron/**/*", "assets/icon.png", "package.json"],
+    "extraResources": [{"from":"vendor/tools","to":"tools","filter":["**/*"]}],
+    "asar": true,
+    "win": { "target": "nsis", "icon": "assets/icon.ico" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "installerIcon": "assets/icon.ico", "uninstallerIcon": "assets/icon.ico" }
+  }
+}

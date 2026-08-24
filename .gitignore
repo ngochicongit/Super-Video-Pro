@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-electron/
+release/
+coverage/
+outputs/
+vendor/tools/
+vendor/*.zip
+.pnpm-store/
+*.log
+*.sqlite
+*.sqlite-*
+.env
+.env.*
+!.env.example
+.codex_spreadsheet_work/

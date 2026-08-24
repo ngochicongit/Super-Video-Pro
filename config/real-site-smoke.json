@@ -1,0 +1,4 @@
+[
+  {"name":"W3Schools Big Buck Bunny MP4","url":"https://www.w3schools.com/html/mov_bbb.mp4","expectedProtocol":"http"},
+  {"name":"Mux public HLS test stream","url":"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8","expectedProtocol":"hls"}
+]

@@ -1,0 +1,1 @@
+export function diagnosticsBaseName(input:string|undefined,date=new Date()){const requested=String(input??"").trim().replace(/[<>:"/\\|?*\x00-\x1F]/g,"_").replace(/\.txt$/i,"").slice(0,100);return requested||`super-video-pro-diagnostics-${date.toISOString().slice(0,10)}`;}
