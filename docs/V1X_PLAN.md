@@ -285,14 +285,14 @@ Status: IN PROGRESS
 
 ### Phase 1 - Git and CI gate
 
-Status: IMPLEMENTED LOCALLY; HOSTED CI PENDING FIRST PUSH
+Status: DONE
 
 - Initialized the workspace as a Git repository on `main` and configured the repository-local `core.hooksPath` to `.githooks`.
 - Added a pre-commit hook that runs the complete `pnpm verify` gate. Hook files are forced to LF line endings for Git for Windows compatibility.
 - Added a least-privilege Windows GitHub Actions workflow for pushes and pull requests: Node.js 24, pinned pnpm 11.19.0, FFmpeg fixture dependency, frozen-lockfile install, full verification, production audit and codebase metrics.
 - Generated and runtime-only trees remain excluded from Git: dependencies, builds, installers, outputs, coverage, SQLite runtime state and bundled tool binaries.
-- Local gate result: PASS; 20 test files, 72 tests, typecheck and production build. Production dependency audit reports no known vulnerabilities.
-- Hosted CI cannot be claimed green until this repository is pushed to GitHub and an Actions run completes.
+- Local gate result: PASS; 21 test files, 74 tests, typecheck and production build. Production dependency audit reports no known vulnerabilities.
+- Hosted clean-checkout gate: PASS in GitHub Actions `Verify` run #7 at commit `1f48029`; Node/pnpm, portable FFmpeg, pinned runtime tools, all tests, build, production audit and metrics completed in 1 minute 13 seconds.
 
 ### Phase 2a - Signed update metadata (certificate-independent)
 
@@ -312,22 +312,22 @@ Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
 
 ### Small delivery task - Create and push the GitHub repository
 
-Status: PUSH COMPLETE; HOSTED CI REPAIR IN PROGRESS
+Status: CI COMPLETE; BRANCH PROTECTION REMAINS USER ACTION
 
 Goal: publish the existing local `main` branch so the hosted verification workflow can run. The current local commit is `bd5b805`; no Git remote is configured yet.
 
 Completion checklist:
 
-- [ ] Create a new empty GitHub repository. Do not initialize it with README, `.gitignore` or license because those files already exist locally.
-- [ ] Choose repository visibility intentionally (`Private` is recommended until signing/update infrastructure is ready).
-- [ ] Copy the repository HTTPS URL and add it locally with `git remote add origin <repository-url>`.
-- [ ] Confirm the target using `git remote -v`; it must point only to the intended repository.
-- [ ] Push with `git push -u origin main` and complete browser/device authentication if Git requests it.
-- [ ] Open the GitHub Actions tab and confirm the `Verify` workflow starts and completes successfully.
+- [x] Create a new empty GitHub repository. Do not initialize it with README, `.gitignore` or license because those files already exist locally.
+- [x] Choose repository visibility intentionally; the repository is currently Public.
+- [x] Configure `origin` as `https://github.com/ngochicongit/Super-Video-Pro.git`.
+- [x] Confirm fetch and push target the intended repository.
+- [x] Push local `main` and configure upstream tracking.
+- [x] Complete a successful hosted `Verify` workflow on a clean Windows runner.
 - [ ] Protect `main` after the first green run: require pull requests and require the `verify` status check before merge.
-- [ ] Mark this task DONE only when `git status` is clean, `main` tracks `origin/main`, and the hosted `Verify` run is green.
+- [x] Confirm `git status` is clean, `main` tracks `origin/main`, and hosted `Verify` run #7 is green.
 
-Verified on 2026-08-25: publication moved to the Public repository `ngochicongit/Super-Video-Pro`. Hosted clean-checkout runs exposed bootstrap assumptions in sequence: premature pnpm caching, missing ignored runtime tools and Chocolatey shims. CI uses the standard portable FFmpeg package; when `where.exe` returns a Chocolatey shim, staging resolves the real executable from the matching package under `Chocolatey\lib`, copies any sibling DLLs, and executes the staged binary itself before verification. Hosted status remains pending until the repaired run completes.
+Verified on 2026-08-25: publication moved to the Public repository `ngochicongit/Super-Video-Pro`. Hosted clean-checkout runs exposed bootstrap assumptions in sequence: premature pnpm caching, missing ignored runtime tools and Chocolatey shims. Run #7 at commit `1f48029` passed after CI adopted deterministic setup and resolved the real portable executable from `Chocolatey\lib`. Only optional branch-protection configuration remains outside the codebase.
 
 Safety rules:
 
