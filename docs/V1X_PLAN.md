@@ -312,7 +312,7 @@ Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
 
 ### Small delivery task - Create and push the GitHub repository
 
-Status: PUSH COMPLETE; HOSTED CI AWAITING AUTHENTICATED CONFIRMATION
+Status: PUSH COMPLETE; HOSTED CI BLOCKED BY GITHUB ACCOUNT BILLING
 
 Goal: publish the existing local `main` branch so the hosted verification workflow can run. The current local commit is `bd5b805`; no Git remote is configured yet.
 
@@ -327,7 +327,7 @@ Completion checklist:
 - [ ] Protect `main` after the first green run: require pull requests and require the `verify` status check before merge.
 - [ ] Mark this task DONE only when `git status` is clean, `main` tracks `origin/main`, and the hosted `Verify` run is green.
 
-Verified on 2026-08-25: local `main` is clean, tracks `origin/main`, and both resolve to commit `5d7535d`. The repository is private and the available browser session is not authenticated, so the hosted Actions result remains deliberately unconfirmed.
+Verified on 2026-08-25: the repository is Public. Local `main` tracks `origin/main`, and the evidence implementation was published at commit `9eda0ce`. GitHub reports both workflow runs as `completed/startup_failure`; the Actions page states that workflows cannot execute because account billing is locked. No hosted runner started and no CI command ran, so these red runs are infrastructure blocks rather than failed source verification. Local pre-commit remains the enforced gate until billing is restored and a hosted `Verify` run passes.
 
 Safety rules:
 
