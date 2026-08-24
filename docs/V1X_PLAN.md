@@ -327,7 +327,7 @@ Completion checklist:
 - [ ] Protect `main` after the first green run: require pull requests and require the `verify` status check before merge.
 - [ ] Mark this task DONE only when `git status` is clean, `main` tracks `origin/main`, and the hosted `Verify` run is green.
 
-Verified on 2026-08-25: publication moved to the Public repository `ngochicongit/Super-Video-Pro`, with local and remote `main` aligned at `c031105`. The first hosted runner started successfully but failed during Node setup because pnpm caching was requested before pnpm existed on the fresh runner. The premature cache configuration was removed; hosted status remains pending until the repaired workflow completes.
+Verified on 2026-08-25: publication moved to the Public repository `ngochicongit/Super-Video-Pro`. The first hosted runner failed during Node setup because pnpm caching was requested before pnpm existed; removing that cache allowed Node, pnpm, FFmpeg and dependencies to install. The next run exposed the second real CI assumption: ignored `vendor/tools` binaries existed locally but were not prepared on a clean checkout. CI now runs the pinned/checksummed runtime-tool preparation before verification. Hosted status remains pending until this clean-checkout repair completes.
 
 Safety rules:
 
