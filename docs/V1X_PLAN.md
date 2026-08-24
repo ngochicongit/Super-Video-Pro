@@ -346,6 +346,7 @@ Status: IMPLEMENTED ON FEATURE BRANCH; OPT-IN COLLECTION ACTIVATED
 - Added a closed event vocabulary for composition intent, multi-input intent, completed exports and builder abandonment.
 - Locked the initial dogfooding gate before collecting data: at least 3 active days, 10 multi-input intents, 5 completed exports and no more than 50% builder abandonment.
 - The gate evaluator defaults to closed and has coverage for aggregation and below-threshold behavior.
+- Gate coverage proves all thresholds must be met across at least three active days and that abandonment above 50% keeps the gate closed even when volume thresholds pass.
 - Added an explicit, default-OFF local evidence opt-in and a visible Composition research probe. Recording is possible only after opt-in and only through a strict `single`/`multi` intent IPC schema; arbitrary fields such as URLs are rejected.
 - Added an on-demand TXT export containing aggregate counts, active-day counts, bounce rate and gate progress. The export contains no URLs, paths, media titles or file content.
 - Composition, ProcessingQueue and Visual Editor remain STOPPED; infrastructure existence is not evidence that the thresholds have been met.
