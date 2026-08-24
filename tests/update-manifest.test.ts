@@ -2,8 +2,10 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
-import { canonicalUpdatePayload, verifyInstallerFile, verifySignedUpdateManifest, type UpdateManifestPayload } from "../src/main/update-manifest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { canonicalUpdatePayload, fetchSignedUpdateManifest, signUpdateManifest, verifyInstallerFile, verifySignedUpdateManifest, type UpdateManifestPayload } from "../src/main/update-manifest";
+
+afterEach(()=>vi.unstubAllGlobals());
 
 function signedManifest(overrides: Partial<UpdateManifestPayload> = {}) {
   const keys = crypto.generateKeyPairSync("ed25519");
@@ -26,6 +28,12 @@ describe("signed update manifest", () => {
     const { manifest, publicKey } = signedManifest();
     expect(verifySignedUpdateManifest(manifest, publicKey).version).toBe("1.2.9");
   });
+
+  it("signs a validated payload for release tooling",()=>{const keys=crypto.generateKeyPairSync("ed25519");const {manifest}=signedManifest();const {signature:_signature,...payload}=manifest;const privateKey=keys.privateKey.export({type:"pkcs8",format:"pem"}).toString();const publicKey=keys.publicKey.export({type:"spki",format:"pem"}).toString();expect(verifySignedUpdateManifest(signUpdateManifest(payload,privateKey),publicKey).version).toBe("1.2.9");});
+
+  it("fetches only a bounded HTTPS manifest and verifies it",async()=>{const {manifest,publicKey}=signedManifest();vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify(manifest),{status:200,headers:{"content-type":"application/json"}})));await expect(fetchSignedUpdateManifest("https://updates.example.com/manifest.json",publicKey)).resolves.toMatchObject({version:"1.2.9"});await expect(fetchSignedUpdateManifest("http://updates.example.com/manifest.json",publicKey)).rejects.toThrow("HTTPS is required");});
+
+  it("rejects oversized update metadata before parsing",async()=>{const {publicKey}=signedManifest();vi.stubGlobal("fetch",vi.fn(async()=>new Response("{}",{headers:{"content-length":String(64*1024+1)}})));await expect(fetchSignedUpdateManifest("https://updates.example.com/manifest.json",publicKey)).rejects.toThrow("byte limit");});
 
   it("rejects metadata tampering", () => {
     const { manifest, publicKey } = signedManifest();

@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { z } from "zod";
+import { fetchOutbound, readBoundedText } from "./network-policy.js";
 
 const Sha256 = z.string().regex(/^[a-f0-9]{64}$/i);
 const HttpsUrl = z.string().url().refine(value => new URL(value).protocol === "https:", "HTTPS is required");
@@ -21,6 +22,7 @@ export const SignedUpdateManifest = z.object({
 
 export type SignedUpdateManifestType = z.infer<typeof SignedUpdateManifest>;
 export type UpdateManifestPayload = Omit<SignedUpdateManifestType, "signature">;
+export const UpdateManifestPayloadSchema = SignedUpdateManifest.omit({ signature:true });
 
 export function canonicalUpdatePayload(payload: UpdateManifestPayload) {
   return JSON.stringify({
@@ -43,6 +45,10 @@ export function verifySignedUpdateManifest(input: unknown, publicKeyPem: string)
   if (!verified) throw new Error("Update manifest signature is invalid");
   return manifest;
 }
+
+export function signUpdateManifest(input:unknown,privateKeyPem:string){const payload=UpdateManifestPayloadSchema.parse(input);const signature=crypto.sign(null,Buffer.from(canonicalUpdatePayload(payload)),privateKeyPem).toString("base64");return SignedUpdateManifest.parse({...payload,signature});}
+
+export async function fetchSignedUpdateManifest(manifestUrl:string,publicKeyPem:string,signal?:AbortSignal){const url=HttpsUrl.parse(manifestUrl);const response=await fetchOutbound(url,{signal,headers:{accept:"application/json"}},15_000);if(!response.ok){await response.body?.cancel();throw new Error(`Update manifest request failed: HTTP ${response.status}`)}const text=await readBoundedText(response,64*1024);let raw:unknown;try{raw=JSON.parse(text)}catch{throw new Error("Update manifest is not valid JSON")}return verifySignedUpdateManifest(raw,publicKeyPem);}
 
 export async function verifyInstallerFile(filePath: string, manifest: Pick<SignedUpdateManifestType, "installerSha256" | "installerSize">) {
   const stat = await fs.promises.stat(filePath);

@@ -300,6 +300,8 @@ Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
 
 - Added a strict versioned manifest contract containing channel, version, publication time, HTTPS installer URL, SHA-256, byte size and optional compatibility/release-note metadata.
 - Added deterministic canonical serialization and Ed25519 signature verification. Unknown fields, insecure URLs and tampered metadata are rejected.
+- Added release-side signing over the same validated canonical payload; private keys remain caller-provided and are never generated or persisted by the application.
+- Added HTTPS-only manifest retrieval through the shared outbound policy with redirect validation, timeout and a 64 KiB streamed response limit. Metadata is not returned until its Ed25519 signature verifies.
 - Added streaming installer verification for exact byte size and SHA-256 before any future handoff to installation.
 - Added tests for authentic manifests, signature tampering, invalid schema/URL and installer integrity.
 - No private key or certificate is stored in the repository. Existing automatic-update UI remains disabled unless separately configured; this phase does not claim OS code signing or a secure end-to-end update channel.
