@@ -8,6 +8,7 @@ import { AppDatabase } from "./db.js";
 import { Diagnostics } from "./diagnostics.js";
 import { registerIpc } from "./ipc.js";
 import { JobManager } from "./jobs.js";
+import {ProductEvidence} from "./product-evidence.js";
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 let db:AppDatabase|undefined;
@@ -33,7 +34,7 @@ app.whenReady().then(async()=>{
   db=new AppDatabase(app.getPath("userData"));const jobs=new JobManager(db);const diagnostics=new Diagnostics(path.join(app.getPath("userData"),"logs"),jobs.settings().logRetentionDays);diagnostics.write("info","app.start",{version:app.getVersion(),platform:process.platform});
   const updater=new AppUpdater();const notified=new Set<string>();const loggedState=new Map<string,string>();
   jobs.on("changed",job=>{for(const window of BrowserWindow.getAllWindows())window.webContents.send("jobs:changed",job);const signature=`${job.status}:${Math.floor(job.progress*10)}`;if(loggedState.get(job.id)!==signature){loggedState.set(job.id,signature);diagnostics.write("info","job.changed",{id:job.id,status:job.status,progress:Math.round(job.progress*100),error:job.error});}if(["completed","failed"].includes(job.status)&&!notified.has(`${job.id}:${job.status}`)){notified.add(`${job.id}:${job.status}`);if(Notification.isSupported())new Notification({title:job.status==="completed"?"Download completed":"Download failed",body:job.resource?.title??job.sourceUrl,silent:false}).show();}});
-  registerIpc(jobs,diagnostics,updater);await createWindow();app.on("activate",()=>{if(BrowserWindow.getAllWindows().length===0)void createWindow();});
+  registerIpc(jobs,diagnostics,updater,new ProductEvidence(db));await createWindow();app.on("activate",()=>{if(BrowserWindow.getAllWindows().length===0)void createWindow();});
 });
 app.on("window-all-closed",()=>{if(!process.env.SVP_BROWSER_SMOKE_OUTPUT&&process.platform!=="darwin")app.quit();});
 app.on("before-quit",()=>db?.close());
