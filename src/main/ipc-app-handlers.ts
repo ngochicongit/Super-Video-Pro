@@ -4,9 +4,10 @@ import type {JobManager} from "./jobs.js";
 import type {IpcInput} from "./ipc-input.js";
 import {diagnosticsBaseName} from "./diagnostics-name.js";
 import type {ProductEvidence} from "./product-evidence.js";
+import {anyUpdateCheckConfigured} from "./app-updater.js";
 
 export function appHandlers(jobs:JobManager,diagnostics:Diagnostics,evidence:ProductEvidence){return {
-  "app:get-info":()=>({version:app.getVersion(),platform:process.platform,updatesConfigured:Boolean(process.env.SVP_UPDATE_FEED_URL)}),
+  "app:get-info":()=>({version:app.getVersion(),platform:process.platform,updatesConfigured:anyUpdateCheckConfigured()}),
   "settings:get":()=>jobs.settings(),
   "settings:update":(input:IpcInput<"settings:update">)=>{const settings=jobs.updateSettings(input);diagnostics.setRetentionDays(settings.logRetentionDays);return settings;},
   "dialog:download-dir":async()=>{const result=await dialog.showOpenDialog({properties:["openDirectory","createDirectory"]});return result.canceled?null:result.filePaths[0]??null;},
