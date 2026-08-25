@@ -15,11 +15,12 @@
     "test:watch": "vitest",
     "smoke:real": "pnpm build && node scripts/real-site-smoke.mjs",
     "package": "pnpm verify && node scripts/prepare-tools.mjs && pnpm build && electron-builder --win nsis",
+    "package:signed": "pnpm verify && node scripts/prepare-tools.mjs && pnpm build && electron-builder --win nsis --config.forceCodeSigning=true && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-authenticode.ps1",
     "postpackage": "pnpm task:cleanup",
     "task:cleanup": "node scripts/cleanup-task-artifacts.mjs",
     "verify": "pnpm typecheck && pnpm test && pnpm build",
-    "metrics": "node scripts/codebase-metrics.mjs"
-    ,"release:manifest": "node scripts/create-update-manifest.mjs"
+    "metrics": "node scripts/codebase-metrics.mjs",
+    "release:manifest": "node scripts/create-update-manifest.mjs"
   },
   "dependencies": {
     "electron-updater": "6.8.9",
