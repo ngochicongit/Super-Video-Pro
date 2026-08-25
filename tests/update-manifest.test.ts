@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { canonicalUpdatePayload, fetchSignedUpdateManifest, signUpdateManifest, verifyInstallerFile, verifySignedUpdateManifest, type UpdateManifestPayload } from "../src/main/update-manifest";
+import { canonicalUpdatePayload, createUpdateManifestFile, fetchSignedUpdateManifest, signUpdateManifest, verifyInstallerFile, verifySignedUpdateManifest, type UpdateManifestPayload } from "../src/main/update-manifest";
 
 afterEach(()=>vi.unstubAllGlobals());
 
@@ -55,5 +55,42 @@ describe("signed update manifest", () => {
     await expect(verifyInstallerFile(installer, expected)).resolves.toBeUndefined();
     await expect(verifyInstallerFile(installer, { ...expected, installerSha256: "0".repeat(64) })).rejects.toThrow("checksum mismatch");
     await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it("creates a signed manifest without overwriting an existing candidate", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "svp-update-create-"));
+    try {
+      const installerPath = path.join(root, "installer.exe");
+      const outputPath = path.join(root, "candidate", "update-manifest.json");
+      const installer = Buffer.from("streamed-installer-content");
+      const keys = crypto.generateKeyPairSync("ed25519");
+      const privateKeyPem = keys.privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+      const publicKeyPem = keys.publicKey.export({ type: "spki", format: "pem" }).toString();
+      await fs.writeFile(installerPath, installer);
+
+      const manifest = await createUpdateManifestFile({
+        installerPath,
+        installerUrl: "https://updates.example.com/installer.exe",
+        privateKeyPem,
+        outputPath,
+        version: "1.2.8",
+        channel: "stable",
+        publishedAt: "2026-08-25T00:00:00.000Z",
+      });
+
+      expect(manifest.installerSize).toBe(installer.length);
+      expect(manifest.installerSha256).toBe(crypto.createHash("sha256").update(installer).digest("hex"));
+      expect(verifySignedUpdateManifest(JSON.parse(await fs.readFile(outputPath, "utf8")), publicKeyPem)).toEqual(manifest);
+      await expect(createUpdateManifestFile({
+        installerPath,
+        installerUrl: "https://updates.example.com/installer.exe",
+        privateKeyPem,
+        outputPath,
+        version: "1.2.8",
+        channel: "stable",
+      })).rejects.toMatchObject({ code: "EEXIST" });
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
   });
 });

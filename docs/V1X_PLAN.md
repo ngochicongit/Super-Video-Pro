@@ -306,6 +306,7 @@ Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
 - Added tests for authentic manifests, signature tampering, invalid schema/URL and installer integrity.
 - No private key or certificate is stored in the repository. Existing automatic-update UI remains disabled unless separately configured; this phase does not claim OS code signing or a secure end-to-end update channel.
 - Added a manual, least-privilege release-candidate workflow. It builds the current Windows installer, creates Ed25519-signed metadata from a repository secret, verifies the signature immediately and uploads an immutable seven-day artifact bundle.
+- Hardened candidate generation so installer SHA-256 is calculated with a stream instead of buffering the complete installer in memory. File creation is covered end to end, verifies its own signature and refuses to overwrite an existing candidate manifest.
 - The candidate workflow does not create a GitHub Release, publish a feed or enable automatic installation. Its installer remains unsigned at the OS level until Phase 2b credentials exist.
 
 ### Remaining gates
@@ -316,9 +317,9 @@ Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
 
 ### Small delivery task - Create and push the GitHub repository
 
-Status: CI COMPLETE; BRANCH PROTECTION REMAINS USER ACTION
+Status: DONE
 
-Goal: publish the existing local `main` branch so the hosted verification workflow can run. The current local commit is `bd5b805`; no Git remote is configured yet.
+Goal: publish the repository and enforce hosted verification through protected pull requests.
 
 Completion checklist:
 
@@ -328,10 +329,10 @@ Completion checklist:
 - [x] Confirm fetch and push target the intended repository.
 - [x] Push local `main` and configure upstream tracking.
 - [x] Complete a successful hosted `Verify` workflow on a clean Windows runner.
-- [ ] Protect `main` after the first green run: require pull requests and require the `verify` status check before merge.
+- [x] Protect `main`: require pull requests and require the `verify` status check before merge. The review requirement was adjusted for a solo-maintainer repository.
 - [x] Confirm `git status` is clean, `main` tracks `origin/main`, and hosted `Verify` run #7 is green.
 
-Verified on 2026-08-25: publication moved to the Public repository `ngochicongit/Super-Video-Pro`. Hosted clean-checkout runs exposed bootstrap assumptions in sequence: premature pnpm caching, missing ignored runtime tools and Chocolatey shims. Run #7 at commit `1f48029` passed after CI adopted deterministic setup and resolved the real portable executable from `Chocolatey\lib`. Only optional branch-protection configuration remains outside the codebase.
+Verified on 2026-08-25: publication moved to the Public repository `ngochicongit/Super-Video-Pro`. Hosted clean-checkout runs exposed bootstrap assumptions in sequence: premature pnpm caching, missing ignored runtime tools and Chocolatey shims. Run #7 at commit `1f48029` passed after CI adopted deterministic setup and resolved the real portable executable from `Chocolatey\lib`. Protected pull-request delivery is active on `main`.
 
 Safety rules:
 
@@ -342,7 +343,7 @@ Safety rules:
 
 ### Evidence infrastructure before Composition
 
-Status: IMPLEMENTED ON FEATURE BRANCH; OPT-IN COLLECTION ACTIVATED
+Status: MERGED TO MAIN; OPT-IN COLLECTION ACTIVATED
 
 - Added SQLite migration v2 with daily aggregate counters only. The table stores `day`, a closed event name and a count; it cannot store URLs, file paths, media titles or arbitrary metadata.
 - Added a closed event vocabulary for composition intent, multi-input intent, completed exports and builder abandonment.
