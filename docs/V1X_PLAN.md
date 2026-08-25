@@ -275,13 +275,13 @@ Verification evidence:
 
 Deferred by evidence, not incomplete implementation:
 
-- Signed update delivery was deferred at the V1.2.8 boundary; Phase 2a infrastructure is now implemented on PR #2, while runtime delivery and OS signing remain gated below.
+- Signed update delivery was deferred at the V1.2.8 boundary; Phase 2a infrastructure is now implemented on PR #2, while automatic runtime delivery remains gated below.
 - Composition, ProcessingJob/Queue, QueryLayer, FeatureFlagService and Visual Editor remain frozen until a second real workflow requires them.
 - Git and hosted CI enforcement were added in V1.2.9; release packaging also remains verify-gated locally.
 
 ## V1.2.9 - Delivery foundation and signed-update infrastructure
 
-Status: IN PROGRESS - PHASES 2A AND 2A.1 DONE; PHASE 2B BLOCKED ON CREDENTIALS
+Status: IN PROGRESS - PHASES 2A AND 2A.1 DONE; PHASE 2B REMOVED; MANIFEST KEY ACTIVATION PENDING
 
 ### Phase 1 - Git and CI gate
 
@@ -310,7 +310,7 @@ Status: DONE - MERGED TO MAIN IN PR #2; RUNTIME DELIVERY REMAINS DISABLED
 - Added a manual, least-privilege release-candidate workflow. It builds the current Windows installer, creates Ed25519-signed metadata from a repository secret, verifies the signature immediately and uploads an immutable seven-day artifact bundle.
 - Hardened candidate generation so installer SHA-256 is calculated with a stream instead of buffering the complete installer in memory. File creation is covered end to end, verifies its own signature and refuses to overwrite an existing candidate manifest.
 - Restricted signed candidate creation to `main`, rejects non-HTTPS or credential-bearing installer URLs before checkout/build, and serializes candidate runs so signing jobs cannot overlap.
-- The candidate workflow does not create a GitHub Release, publish a feed or enable automatic installation. Its installer remains unsigned at the OS level until Phase 2b credentials exist.
+- The candidate workflow does not create a GitHub Release, publish a feed or enable automatic installation. Personal-distribution installers intentionally remain unsigned at the OS level.
 
 ### Phase 2a.1 - Runtime signed-update check
 
@@ -318,15 +318,15 @@ Status: DONE - MERGED TO MAIN IN PR #3
 
 - Configure only through both `SVP_SIGNED_UPDATE_MANIFEST_URL` and `SVP_UPDATE_ED25519_PUBLIC_KEY_PEM`; partial or absent configuration keeps the UI capability disabled.
 - Fetch through the bounded outbound policy, verify Ed25519 authenticity before version comparison, and reject invalid semantic versions.
-- This phase is check-only. A verified available update is shown, but automatic download and installation remain explicitly blocked until Phase 2b OS signing is configured.
+- This phase is check-only. A verified available update is shown, while automatic download and installation remain explicitly disabled for personal distribution.
 - Stable/prerelease comparison, authentic availability checks, partial-configuration failure and blocked download/install handoff have regression coverage. Update status messages shown by the renderer come from the Vietnamese locale file.
 - Verification: `pnpm verify` PASS with 22 test files and 87 tests; typecheck and production build PASS. Production dependency audit reports no known vulnerabilities, and bounded task cleanup completed.
 - Hosted verification: PR #3 passed its required Verify check, merged as `c0eb24a`, and the post-merge `main` Verify run #23 passed in 1 minute 12 seconds. Phase 2a.1 is closed; no automatic download/install claim is made.
 
 ### Remaining gates
 
-- Phase 2b Windows signing infrastructure is implemented on a feature branch: the manual candidate job uses the protected `windows-signing` environment, requires `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD` and `SVP_UPDATE_ED25519_PRIVATE_KEY_PEM`, enables electron-builder fail-closed signing, and rejects artifacts unless both the NSIS installer and unpacked application have valid Authenticode signatures with trusted timestamps.
-- Activation remains BLOCKED: no local Code Signing certificate with a private key exists and the GitHub environment secrets do not yet contain a real PFX/base64 certificate, password or Ed25519 manifest private key. Do not mark Phase 2b DONE or enable automatic installation until a real signed workflow run passes.
+- Phase 2b OS code signing was REMOVED by explicit product decision: this is a personal-use application, so no Authenticode PFX, certificate password, signing environment or certificate purchase is required.
+- Ed25519 manifest signing remains in scope because it is free, self-managed and verifies update metadata without claiming a Windows publisher identity. Only `SVP_UPDATE_ED25519_PRIVATE_KEY_PEM` is needed to create a manifest-signed candidate.
 - macOS signing/notarization remains out of scope because the repository currently has no macOS packaging target.
 - Composition remains closed until the already-implemented local evidence gate reaches its pre-declared thresholds; infrastructure alone does not open the feature.
 - ProcessingQueue requires a real Composition workflow; Visual Editor requires the previously agreed usage thresholds. These conditional STOP gates remain active.

@@ -44,8 +44,8 @@ describe("runtime signed update boundary", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ...payload, signature }), { status: 200 })));
     const updater = new AppUpdater("1.2.9");
     await expect(updater.check()).resolves.toMatchObject({ state: "available", version: "1.3.0" });
-    await expect(updater.download()).rejects.toThrow("disabled until OS signing");
-    expect(() => updater.install()).toThrow("disabled until OS signing");
+    await expect(updater.download()).rejects.toThrow("disabled for personal distribution");
+    expect(() => updater.install()).toThrow("disabled for personal distribution");
     expect(autoUpdaterMock.downloadUpdate).not.toHaveBeenCalled();
     expect(autoUpdaterMock.quitAndInstall).not.toHaveBeenCalled();
   });
