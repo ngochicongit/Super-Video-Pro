@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke:real": "pnpm build && node scripts/real-site-smoke.mjs",
-    "package": "pnpm verify && node scripts/prepare-tools.mjs && pnpm build && electron-builder --win nsis",
+    "package": "pnpm verify && node scripts/prepare-tools.mjs && pnpm build && electron-builder --win nsis --publish never",
     "postpackage": "pnpm task:cleanup",
     "task:cleanup": "node scripts/cleanup-task-artifacts.mjs",
     "verify": "pnpm typecheck && pnpm test && pnpm build",
