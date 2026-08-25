@@ -16,6 +16,7 @@ export const ipcContract = {
   "compositions:create": { input: CompositionSpec, output: CompositionJob },
   "compositions:cancel": { input: CompositionIdInput, output: CompositionJob },
   "compositions:retry": { input: CompositionIdInput, output: CompositionJob },
+  "compositions:remove": { input: CompositionIdInput, output: z.object({ removed: z.boolean() }) },
   "tools:status": { input: z.object({}).default({}), output: z.array(z.object({name:z.string(),available:z.boolean(),version:z.string().nullable()})) },
   "updates:check": { input: z.object({}).default({}), output: z.object({state:z.string(),version:z.string().optional(),percent:z.number().optional(),message:z.string().optional()}) },
   "updates:status": { input: z.object({}).default({}), output: z.object({state:z.string(),version:z.string().optional(),percent:z.number().optional(),message:z.string().optional()}) },

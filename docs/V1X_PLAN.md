@@ -331,7 +331,7 @@ Status: DONE - MERGED TO MAIN IN PR #3
 - Added `pnpm release:keygen -- <output-directory>` to generate an Ed25519 pair safely outside the repository. It refuses repository paths and existing keys, writes the private key with restrictive permissions where supported, proves the pair cryptographically in tests, and never prints private-key contents.
 - Production key creation remains an explicit operator action; build, test and CI never generate or rotate signing keys implicitly.
 - Production Ed25519 activation: the private key was generated outside the workspace under the user Documents backup directory and uploaded as repository secret `SVP_UPDATE_ED25519_PRIVATE_KEY_PEM` without logging its contents. The matching public key is safe to distribute, is bundled in the application, and is pinned by SHA-256 fingerprint `5972a897b00c66f2a2fbc5d573b0db650315937540e8ac6e4351dd7c0864ea21` in regression coverage.
-- Composition remains closed until the already-implemented local evidence gate reaches its pre-declared thresholds; infrastructure alone does not open the feature.
+- The minimal one-video plus one-audio Composition slice is open. Expansion to multi-input Composition remains closed until the local evidence gate reaches its pre-declared thresholds.
 - ProcessingQueue requires a real Composition workflow; Visual Editor requires the previously agreed usage thresholds. These conditional STOP gates remain active.
 
 ### Small delivery task - Create and push the GitHub repository
@@ -398,3 +398,15 @@ Status: DONE
 - Navigation regression coverage locks the five approved tabs and prevents settings, tools or Composition controls from drifting back into Download. Filters expose only active statuses under Tasks and only terminal statuses under History.
 - Verification: 27 test files and 99 tests passed with typecheck and production build. Visual smoke passed for all five tabs at 1180x760, including selected-tab repaint and responsive two-column Settings layout.
 - Release gate: PASS; the verify-first package command produced `Super Video Pro Setup 1.3.0.exe` (271,403,195 bytes, SHA-256 `450A8BE33014130954276FA740BFBB72DE7EB33DE159E6D8170BDF9F6157BD2B`) and bounded cleanup removed all tab-smoke screenshots and profiles.
+
+## V1.3.2 - Composition history lifecycle
+
+Status: DONE
+
+- Apply the existing history-retention setting to terminal Composition records as well as Download history. Active Composition work is never removed by retention.
+- Add schema-validated IPC for removing a single terminal Composition record. Running work cannot be removed, and deleting history never deletes the user's exported media file.
+- Add Composition search and status filtering to Tasks and History, with terminal-only removal actions kept inside History.
+- Harden the UI smoke harness so an update-check failure is recorded in its report instead of preventing screenshot and download-smoke evidence from being written.
+- Verification: 27 test files and 101 tests passed with typecheck and production build. Database tests cover terminal-only retention, manager tests protect active work and exported media, and IPC remains strict and allowlisted.
+- Functional retest: direct UI download produced a 788,493-byte MP4 with no `.part`; real-network smoke passed direct MP4 and HLS extraction; production dependency audit reported no known vulnerabilities.
+- Visual smoke: PASS at 1180x760. The History tab renders separate Download and Composition search/filter controls without overlap or truncation, and update-check failure no longer suppresses its JSON/PNG evidence.
