@@ -17,5 +17,6 @@ export function appHandlers(jobs:JobManager,diagnostics:Diagnostics,evidence:Pro
   "app:log-action":(input:IpcInput<"app:log-action">)=>{diagnostics.write("info","ui.action",{action:input.action,details:input.details});return{logged:true};},
   "diagnostics:export":async(input:IpcInput<"diagnostics:export">)=>{const base=diagnosticsBaseName(input.fileName);const result=await dialog.showSaveDialog({title:"Export diagnostics",defaultPath:`${base}.txt`,filters:[{name:"Text",extensions:["txt"]}]});if(result.canceled||!result.filePath)return null;diagnostics.exportText(result.filePath);return result.filePath;}
   ,"evidence:gate":()=>evidence.gate()
+  ,"evidence:multi-input-intent":()=>evidence.recordIfEnabled(jobs.settings().collectProductEvidence,"composition.multi_input_intent")
   ,"evidence:export":async()=>{const result=await dialog.showSaveDialog({title:"Export local product evidence",defaultPath:"super-video-pro-product-evidence.txt",filters:[{name:"Text",extensions:["txt"]}]});if(result.canceled||!result.filePath)return null;return evidence.exportText(result.filePath);}
 };}

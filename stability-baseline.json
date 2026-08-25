@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "certifiedAt": "2026-08-25T17:19:31.706Z",
+  "certifiedAt": "2026-08-25T17:29:59.233Z",
   "policy": "Skip repeated manual/real-site/visual certification only while the group fingerprint is unchanged. Always keep pnpm verify in the delivery gate.",
   "validation": {
-    "verify": "27 files / 101 tests PASS",
+    "verify": "27 files / 103 tests PASS",
     "directMp4": "PASS",
     "publicHls": "PASS",
     "uiDownload": "PASS, 788493 bytes, no .part",
-    "visualTabs": "PASS at 1180x760",
+    "visualTabs": "PASS at 1180x760; V1.3.3 isolated Settings runtime DOM smoke PASS",
     "productionAudit": "no known vulnerabilities"
   },
   "groups": {
@@ -35,7 +35,7 @@
       ]
     },
     "ipc-storage-settings-diagnostics": {
-      "fingerprint": "0b7c3f794259deeff249273a713b2832f83f226a6d670689a076d7dd37ebbad7",
+      "fingerprint": "fb4983f9f029749ff3ed9cafed694ad82532f0bc371e4761162c31d6688ca632",
       "files": [
         "src/shared/contracts.ts",
         "src/shared/ipc.ts",
@@ -51,7 +51,7 @@
       ]
     },
     "composition": {
-      "fingerprint": "75322fb0c072b5d2ce389a05d60a01414fcde1e145bdee28339de0a3dd388128",
+      "fingerprint": "e80d678e6757a7fcc6d7c26b7962286b52959298f26c9a8ed6864b9c5df8f920",
       "files": [
         "src/main/composition.ts",
         "src/main/ipc-composition-handlers.ts",
@@ -62,7 +62,7 @@
       ]
     },
     "tabbed-ui-and-localization": {
-      "fingerprint": "af273d4b34e7bdcfef6593ed478b7b180d3a7dae39a1633f566c9e0b4c8f1a12",
+      "fingerprint": "f047b8c1a85ca2228c92339dfe99cfe9009962ee1d651b72aecff34869cab064",
       "files": [
         "src/main/index.ts",
         "src/renderer/App.tsx",
@@ -77,7 +77,7 @@
       ]
     },
     "safe-update-check": {
-      "fingerprint": "98c1c7d707d22f22959b9c214907610f951b41af4a8159538472e407d5942e29",
+      "fingerprint": "c99506f77df3b175fe4bcb966da146da0dc45f1660ae5a8ef2dc4d1be602d91d",
       "files": [
         "src/main/app-updater.ts",
         "src/main/network-policy.ts",

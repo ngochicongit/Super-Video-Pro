@@ -411,6 +411,22 @@ Status: DONE
 - Functional retest: direct UI download produced a 788,493-byte MP4 with no `.part`; real-network smoke passed direct MP4 and HLS extraction; production dependency audit reported no known vulnerabilities.
 - Visual smoke: PASS at 1180x760. The History tab renders separate Download and Composition search/filter controls without overlap or truncation, and update-check failure no longer suppresses its JSON/PNG evidence.
 
+## V1.3.3 - Reachable multi-input evidence gate
+
+Status: DONE - LOCALLY PACKAGED AND VERIFIED; NOT EXTERNALLY RELEASED
+
+- Audited the completed task list and confirmed V1.3.2 plus all six certified feature groups were complete and unchanged before this task.
+- Read the real user-data SQLite database without mutation: it contained no product-evidence rows and no Composition jobs, so the predefined multi-input gate remains closed and multi-input Composition was not opened.
+- Fixed the unreachable gate input: Settings now exposes `Tôi cần ghép nhiều video`, backed by a strict allowlisted IPC channel that can record only the closed `composition.multi_input_intent` event.
+- Recording is enforced by the current persisted `collectProductEvidence` opt-in in the main process, not only by the disabled renderer button. The response returns the recalculated gate so the `0/10` progress display updates immediately.
+- Regression coverage protects opt-in enforcement and the disabled UI action. `pnpm verify` passed with 27 test files and 103 tests; the production build passed and `pnpm audit --prod` reported no known vulnerabilities.
+- Isolated production-build runtime smoke passed: the preload bridge loaded, Settings rendered both evidence actions, the interest action was disabled by default and progress rendered `0/10`. The isolated profile was removed after the check.
+- Release gate: PASS. `pnpm package` reran typecheck, all 103 tests and both production builds before creating `release/Super Video Pro Setup 1.3.0.exe` (271,404,008 bytes, SHA-256 `179711104ADBCCAAAA334BF913C4ED2BAE8926C9225885AE5D229E1A3D3E3F73`). Windows reports the installer as `NotSigned`.
+- Packaged `app.asar` smoke: PASS. Version `1.3.0` loaded with the preload bridge, both evidence actions rendered, multi-input intent was disabled by default and progress was `0/10`.
+- Clean NSIS install/uninstall: PASS. Both processes exited 0 and the isolated installation directory was removed; bounded cleanup removed the packaged-smoke profile.
+- Known limitations: multi-input Composition and Visual Editor remain intentionally closed by the evidence gate; Windows platform signing remains unavailable. Rollback is to the previous verified installer retained under `release/`; the local release operator owns rollback because no external deployment occurred.
+- Release state is explicit: the local installer is a verified release candidate, but no Git commit, push, GitHub Release or external deployment was performed in this task.
+
 ## Stable feature certification policy
 
 Status: ACTIVE

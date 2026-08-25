@@ -1,13 +1,15 @@
 # V1 release gate
 
-- [ ] `pnpm verify` passes.
-- [ ] `pnpm package` produces the NSIS installer.
-- [ ] `win-unpacked/Super Video Pro.exe` remains running during the production smoke window.
-- [ ] Direct fixture download matches the expected bytes and leaves no `.part` file.
-- [ ] Pause/resume/cancel/retry and restart recovery are exercised.
-- [ ] HLS/DASH/yt-dlp checks run when their tools are available; missing tools produce an actionable error.
-- [ ] Malformed IPC payloads are rejected.
-- [ ] Final invalid/empty files never become `completed`.
-- [ ] Diagnostic secret corpus is fully redacted.
-- [ ] No unresolved Critical/P0 blocker remains.
-- [ ] Release notes, known issues and rollback owner are recorded.
+- [x] `pnpm verify` passes.
+- [x] `pnpm package` produces the NSIS installer.
+- [x] `win-unpacked/Super Video Pro.exe` remains running during the production smoke window.
+- [x] Direct fixture download matches the expected bytes and leaves no `.part` file.
+- [x] Pause/resume/cancel/retry and restart recovery are exercised.
+- [x] HLS/DASH/yt-dlp checks run when their tools are available; missing tools produce an actionable error.
+- [x] Malformed IPC payloads are rejected.
+- [x] Final invalid/empty files never become `completed`.
+- [x] Diagnostic secret corpus is fully redacted.
+- [x] No unresolved Critical/P0 blocker remains.
+- [x] Release notes, known issues and rollback owner are recorded.
+
+Latest gate closure: V1.3.3 local release candidate on 2026-08-26. Evidence and limitations are recorded in `docs/V1X_PLAN.md`; no external publication is claimed.
