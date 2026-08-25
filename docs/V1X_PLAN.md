@@ -281,7 +281,7 @@ Deferred by evidence, not incomplete implementation:
 
 ## V1.2.9 - Delivery foundation and signed-update infrastructure
 
-Status: IN PROGRESS
+Status: IN PROGRESS - PHASE 2A MERGED; PHASE 2A.1 IMPLEMENTED; PHASE 2B BLOCKED ON CREDENTIALS
 
 ### Phase 1 - Git and CI gate
 
@@ -298,7 +298,7 @@ Status: DONE
 
 ### Phase 2a - Signed update metadata (certificate-independent)
 
-Status: IMPLEMENTED AND TESTED ON PR #2; NOT YET MERGED OR ENABLED FOR RUNTIME UPDATE DELIVERY
+Status: DONE - MERGED TO MAIN IN PR #2; RUNTIME DELIVERY REMAINS DISABLED
 
 - Added a strict versioned manifest contract containing channel, version, publication time, HTTPS installer URL, SHA-256, byte size and optional compatibility/release-note metadata.
 - Added deterministic canonical serialization and Ed25519 signature verification. Unknown fields, insecure URLs and tampered metadata are rejected.
@@ -311,6 +311,16 @@ Status: IMPLEMENTED AND TESTED ON PR #2; NOT YET MERGED OR ENABLED FOR RUNTIME U
 - Hardened candidate generation so installer SHA-256 is calculated with a stream instead of buffering the complete installer in memory. File creation is covered end to end, verifies its own signature and refuses to overwrite an existing candidate manifest.
 - Restricted signed candidate creation to `main`, rejects non-HTTPS or credential-bearing installer URLs before checkout/build, and serializes candidate runs so signing jobs cannot overlap.
 - The candidate workflow does not create a GitHub Release, publish a feed or enable automatic installation. Its installer remains unsigned at the OS level until Phase 2b credentials exist.
+
+### Phase 2a.1 - Runtime signed-update check
+
+Status: IMPLEMENTED AND TESTED ON FEATURE BRANCH; NOT YET MERGED
+
+- Configure only through both `SVP_SIGNED_UPDATE_MANIFEST_URL` and `SVP_UPDATE_ED25519_PUBLIC_KEY_PEM`; partial or absent configuration keeps the UI capability disabled.
+- Fetch through the bounded outbound policy, verify Ed25519 authenticity before version comparison, and reject invalid semantic versions.
+- This phase is check-only. A verified available update is shown, but automatic download and installation remain explicitly blocked until Phase 2b OS signing is configured.
+- Stable/prerelease comparison, authentic availability checks, partial-configuration failure and blocked download/install handoff have regression coverage. Update status messages shown by the renderer come from the Vietnamese locale file.
+- Verification: `pnpm verify` PASS with 22 test files and 87 tests; typecheck and production build PASS. Production dependency audit reports no known vulnerabilities, and bounded task cleanup completed.
 
 ### Remaining gates
 

@@ -79,5 +79,10 @@
   "evidence_enabled": "Đã bật ghi nhận cục bộ.",
   "evidence_disabled": "Đã tắt ghi nhận cục bộ.",
   "evidence_recorded": "Đã ghi nhận nhu cầu trên thiết bị này.",
-  "evidence_progress": "Tiến độ ngưỡng multi-input:"
+  "evidence_progress": "Tiến độ ngưỡng multi-input:",
+  "update_checking": "Đang xác minh thông tin cập nhật...",
+  "update_available": "Có bản cập nhật đã xác minh",
+  "update_not_available": "Bạn đang sử dụng phiên bản mới nhất.",
+  "update_error": "Không thể xác minh bản cập nhật. Hãy kiểm tra cấu hình hoặc nhật ký debug.",
+  "update_not_configured": "Kênh cập nhật an toàn chưa được cấu hình."
 }

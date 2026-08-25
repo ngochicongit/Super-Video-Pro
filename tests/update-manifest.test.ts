@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { canonicalUpdatePayload, createUpdateManifestFile, fetchSignedUpdateManifest, signUpdateManifest, verifyInstallerFile, verifySignedUpdateManifest, type UpdateManifestPayload } from "../src/main/update-manifest";
+import { canonicalUpdatePayload, checkSignedUpdateAvailability, compareUpdateVersions, createUpdateManifestFile, fetchSignedUpdateManifest, signUpdateManifest, verifyInstallerFile, verifySignedUpdateManifest, type UpdateManifestPayload } from "../src/main/update-manifest";
 
 afterEach(()=>vi.unstubAllGlobals());
 
@@ -45,6 +45,10 @@ describe("signed update manifest", () => {
     expect(() => verifySignedUpdateManifest({ ...manifest, installerUrl: "http://updates.example.com/app.exe" }, publicKey)).toThrow();
     expect(() => verifySignedUpdateManifest({ ...manifest, unexpected: true }, publicKey)).toThrow();
   });
+
+  it("compares stable and prerelease versions deterministically",()=>{expect(compareUpdateVersions("1.3.0","1.2.9")).toBeGreaterThan(0);expect(compareUpdateVersions("1.2.9","1.2.9")).toBe(0);expect(compareUpdateVersions("1.2.9-beta.2","1.2.9-beta.1")).toBeGreaterThan(0);expect(compareUpdateVersions("1.2.9-alpha-beta","1.2.9-alpha-alpha")).toBeGreaterThan(0);expect(compareUpdateVersions("1.2.9","1.2.9-beta.2")).toBeGreaterThan(0);expect(()=>compareUpdateVersions("latest","1.2.9")).toThrow();});
+
+  it("reports availability only after authentic signed metadata verifies",async()=>{const {manifest,publicKey}=signedManifest({version:"1.3.0"});vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify(manifest),{status:200})));await expect(checkSignedUpdateAvailability("https://updates.example.com/manifest.json",publicKey,"1.2.8")).resolves.toMatchObject({available:true,manifest:{version:"1.3.0"}});await expect(checkSignedUpdateAvailability("https://updates.example.com/manifest.json",publicKey,"1.3.0")).resolves.toMatchObject({available:false});});
 
   it("verifies installer size and SHA-256", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "svp-update-manifest-"));
