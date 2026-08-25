@@ -9,6 +9,7 @@ import { Diagnostics } from "./diagnostics.js";
 import { registerIpc } from "./ipc.js";
 import { JobManager } from "./jobs.js";
 import {ProductEvidence} from "./product-evidence.js";
+import {CompositionManager} from "./composition.js";
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 let db:AppDatabase|undefined;
@@ -33,9 +34,10 @@ app.whenReady().then(async()=>{
   process.env.SVP_TOOL_DIR=path.join(app.getPath("userData"),"tools");
   if(!process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM)process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM=await fs.readFile(path.join(app.getAppPath(),"assets","update-public.pem"),"utf8");
   db=new AppDatabase(app.getPath("userData"));const jobs=new JobManager(db);const diagnostics=new Diagnostics(path.join(app.getPath("userData"),"logs"),jobs.settings().logRetentionDays);diagnostics.write("info","app.start",{version:app.getVersion(),platform:process.platform});
-  const updater=new AppUpdater(app.getVersion());const notified=new Set<string>();const loggedState=new Map<string,string>();
+  const evidence=new ProductEvidence(db);const compositions=new CompositionManager(db,evidence,()=>jobs.settings().collectProductEvidence);const updater=new AppUpdater(app.getVersion());const notified=new Set<string>();const loggedState=new Map<string,string>();
   jobs.on("changed",job=>{for(const window of BrowserWindow.getAllWindows())window.webContents.send("jobs:changed",job);const signature=`${job.status}:${Math.floor(job.progress*10)}`;if(loggedState.get(job.id)!==signature){loggedState.set(job.id,signature);diagnostics.write("info","job.changed",{id:job.id,status:job.status,progress:Math.round(job.progress*100),error:job.error});}if(["completed","failed"].includes(job.status)&&!notified.has(`${job.id}:${job.status}`)){notified.add(`${job.id}:${job.status}`);if(Notification.isSupported())new Notification({title:job.status==="completed"?"Download completed":"Download failed",body:job.resource?.title??job.sourceUrl,silent:false}).show();}});
-  registerIpc(jobs,diagnostics,updater,new ProductEvidence(db));await createWindow();app.on("activate",()=>{if(BrowserWindow.getAllWindows().length===0)void createWindow();});
+  compositions.on("changed",job=>{for(const window of BrowserWindow.getAllWindows())window.webContents.send("compositions:changed",job);diagnostics.write("info","composition.changed",{id:job.id,status:job.status,progress:Math.round(job.progress*100),error:job.error});});
+  registerIpc(jobs,diagnostics,updater,evidence,compositions);await createWindow();app.on("activate",()=>{if(BrowserWindow.getAllWindows().length===0)void createWindow();});
 });
 app.on("window-all-closed",()=>{if(!process.env.SVP_BROWSER_SMOKE_OUTPUT&&process.platform!=="darwin")app.quit();});
 app.on("before-quit",()=>db?.close());

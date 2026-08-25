@@ -84,5 +84,21 @@
   "update_available": "Có bản cập nhật đã xác minh",
   "update_not_available": "Bạn đang sử dụng phiên bản mới nhất.",
   "update_error": "Không thể xác minh bản cập nhật. Hãy kiểm tra cấu hình hoặc nhật ký debug.",
-  "update_not_configured": "Kênh cập nhật an toàn chưa được cấu hình."
+  "update_not_configured": "Kênh cập nhật an toàn chưa được cấu hình.",
+  "composition_title": "Ghép video và âm thanh",
+  "composition_hint": "Chọn một video và một file âm thanh có thời lượng tương đương để xuất MP4.",
+  "composition_video": "Video nguồn",
+  "composition_audio": "Âm thanh nguồn",
+  "composition_video_placeholder": "Chọn file video...",
+  "composition_audio_placeholder": "Chọn file âm thanh...",
+  "composition_output_name": "Tên file xuất",
+  "composition_output_default": "Để trống để tạo tên tự động",
+  "composition_export": "Ghép và xuất",
+  "composition_pending": "Bản ghép mới",
+  "composition_error_invalid_media": "Không thể đọc thông tin media từ file đã chọn.",
+  "composition_error_video_stream": "File video không chứa luồng hình ảnh hợp lệ.",
+  "composition_error_audio_stream": "File âm thanh không chứa luồng âm thanh hợp lệ.",
+  "composition_error_duration": "Thời lượng video và âm thanh lệch nhau quá 0,5 giây.",
+  "composition_error_output_exists": "File xuất đã tồn tại. Hãy chọn tên khác.",
+  "composition_error_processing": "FFmpeg không thể ghép hai file đã chọn."
 }

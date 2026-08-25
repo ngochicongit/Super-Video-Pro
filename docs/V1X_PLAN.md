@@ -281,7 +281,7 @@ Deferred by evidence, not incomplete implementation:
 
 ## V1.2.9 - Delivery foundation and signed-update infrastructure
 
-Status: DONE - PHASES 2A AND 2A.1 VERIFIED; PHASE 2B REMOVED BY PRODUCT DECISION
+Status: DONE - PHASES 2A AND 2A.1 VERIFIED
 
 ### Phase 1 - Git and CI gate
 
@@ -306,11 +306,11 @@ Status: DONE - MERGED TO MAIN IN PR #2; RUNTIME DELIVERY REMAINS DISABLED
 - Added HTTPS-only manifest retrieval through the shared outbound policy with redirect validation, timeout and a 64 KiB streamed response limit. Metadata is not returned until its Ed25519 signature verifies.
 - Added streaming installer verification for exact byte size and SHA-256 before any future handoff to installation.
 - Added tests for authentic manifests, signature tampering, invalid schema/URL and installer integrity.
-- No private key or certificate is stored in the repository. Existing automatic-update UI remains disabled unless separately configured; this phase does not claim OS code signing or a secure end-to-end update channel.
+- No private key is stored in the repository. Existing automatic-update UI remains disabled unless separately configured.
 - Added a manual, least-privilege release-candidate workflow. It builds the current Windows installer, creates Ed25519-signed metadata from a repository secret, verifies the signature immediately and uploads an immutable seven-day artifact bundle.
 - Hardened candidate generation so installer SHA-256 is calculated with a stream instead of buffering the complete installer in memory. File creation is covered end to end, verifies its own signature and refuses to overwrite an existing candidate manifest.
 - Restricted signed candidate creation to `main`, rejects non-HTTPS or credential-bearing installer URLs before checkout/build, and serializes candidate runs so signing jobs cannot overlap.
-- The candidate workflow does not create a GitHub Release, publish a feed or enable automatic installation. Personal-distribution installers intentionally remain unsigned at the OS level.
+- The candidate workflow does not create a GitHub Release, publish a feed or enable automatic installation.
 - Production candidate proof: workflow run `32828009212` passed on `main` commit `2e987ec` after building the NSIS installer, signing the manifest with the repository Ed25519 secret, verifying that signature and uploading artifact `super-video-pro-signed-update-candidate` (207,771,891 bytes, seven-day retention, artifact ID `9555738085`).
 - The first production attempt exposed electron-builder's implicit CI publishing behavior. Packaging now always passes `--publish never`, with regression coverage, so the least-privilege workflow needs no GitHub publication token and cannot silently create a release.
 
@@ -327,12 +327,10 @@ Status: DONE - MERGED TO MAIN IN PR #3
 
 ### Remaining gates
 
-- Phase 2b OS code signing was REMOVED by explicit product decision: this is a personal-use application, so no Authenticode PFX, certificate password, signing environment or certificate purchase is required.
-- Ed25519 manifest signing remains in scope because it is free, self-managed and verifies update metadata without claiming a Windows publisher identity. Only `SVP_UPDATE_ED25519_PRIVATE_KEY_PEM` is needed to create a manifest-signed candidate.
+- Ed25519 manifest signing remains in scope because it is free, self-managed and verifies update metadata. Only `SVP_UPDATE_ED25519_PRIVATE_KEY_PEM` is needed to create a manifest-signed candidate.
 - Added `pnpm release:keygen -- <output-directory>` to generate an Ed25519 pair safely outside the repository. It refuses repository paths and existing keys, writes the private key with restrictive permissions where supported, proves the pair cryptographically in tests, and never prints private-key contents.
 - Production key creation remains an explicit operator action; build, test and CI never generate or rotate signing keys implicitly.
 - Production Ed25519 activation: the private key was generated outside the workspace under the user Documents backup directory and uploaded as repository secret `SVP_UPDATE_ED25519_PRIVATE_KEY_PEM` without logging its contents. The matching public key is safe to distribute, is bundled in the application, and is pinned by SHA-256 fingerprint `5972a897b00c66f2a2fbc5d573b0db650315937540e8ac6e4351dd7c0864ea21` in regression coverage.
-- macOS signing/notarization remains out of scope because the repository currently has no macOS packaging target.
 - Composition remains closed until the already-implemented local evidence gate reaches its pre-declared thresholds; infrastructure alone does not open the feature.
 - ProcessingQueue requires a real Composition workflow; Visual Editor requires the previously agreed usage thresholds. These conditional STOP gates remain active.
 
@@ -357,7 +355,7 @@ Verified on 2026-08-25: publication moved to the Public repository `ngochicongit
 
 Safety rules:
 
-- Never place access tokens, signing private keys, certificates, cookies or `.env` values in the repository.
+- Never place access tokens, signing private keys, cookies or `.env` values in the repository.
 - Do not use `git push --force` for the initial publication.
 - If GitHub created an initial commit by mistake, stop and reconcile histories instead of forcing the local branch over it.
 - Release installers and runtime tools remain ignored; publish them later through GitHub Releases or another signed release channel, not normal Git history.
@@ -371,6 +369,19 @@ Status: MERGED TO MAIN; OPT-IN COLLECTION ACTIVATED
 - Locked the initial dogfooding gate before collecting data: at least 3 active days, 10 multi-input intents, 5 completed exports and no more than 50% builder abandonment.
 - The gate evaluator defaults to closed and has coverage for aggregation and below-threshold behavior.
 - Gate coverage proves all thresholds must be met across at least three active days and that abandonment above 50% keeps the gate closed even when volume thresholds pass.
-- Added an explicit, default-OFF local evidence opt-in and a visible Composition research probe. Recording is possible only after opt-in and only through a strict `single`/`multi` intent IPC schema; arbitrary fields such as URLs are rejected.
+- Added an explicit, default-OFF local evidence opt-in and a visible privacy/export control. The real Composition workflow records only closed aggregate events after opt-in; URLs, paths and media names are never stored in evidence.
 - Added an on-demand TXT export containing aggregate counts, active-day counts, bounce rate and gate progress. The export contains no URLs, paths, media titles or file content.
-- Composition, ProcessingQueue and Visual Editor remain STOPPED; infrastructure existence is not evidence that the thresholds have been met.
+- The minimal Composition slice is now open in V1.3.0. A generalized ProcessingQueue and Visual Editor remain STOPPED until real usage crosses their predefined thresholds.
+
+## V1.3.0 - Minimal Composition vertical slice
+
+Status: DONE
+
+- Opened only the smallest Composition workflow: one local video plus one local audio input, producing one MP4 `FinalArtifact`. Multi-clip concat, subtitles, trim/timeline and a generalized ProcessingQueue remain outside this slice.
+- Added strict IPC schemas, native file pickers and a compact Vietnamese UI. Output names are optional, sanitized and cannot overwrite an existing file.
+- Added SQLite-backed composition jobs with queued/processing/validating/completed/failed/cancelled states. Interrupted work becomes an explicit failed job on restart and can be retried; active work can be cancelled.
+- FFprobe requires a video stream in the first input, an audio stream in the second and a duration difference no greater than 0.5 seconds. FFmpeg copies video, encodes audio as AAC, writes a `.processing` file, validates it and atomically renames it only after success.
+- Product evidence is recorded only when the existing local opt-in is enabled. Real Composition starts and completed exports now supply the previously missing evidence instead of relying on a research-only button.
+- Verification: 26 test files and 96 tests passed with typecheck and production build. Real FFmpeg fixtures cover successful mux/finalization, duration mismatch, evidence opt-out and interrupted-job recovery; corrupt composition rows are quarantined; production audit found no known vulnerabilities.
+- Visual smoke: PASS at 1180x760; the v1.3.0 Composition form, file controls, disabled initial export action and evidence privacy controls rendered without layout breakage.
+- Release gate: PASS; `pnpm package` reran all 95 tests, typecheck and production build before producing `release/Super Video Pro Setup 1.3.0.exe` (271,401,850 bytes, SHA-256 `BB3B6E34065AB24B7CD8F66D90504FEAEE7E84F3A7999C15633E9CD5B868180E`). Windows reports the installer as `NotSigned`; no platform-signing configuration, workflow, credential or project-owned documentation remains.

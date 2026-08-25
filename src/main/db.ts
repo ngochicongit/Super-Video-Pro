@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 import fs from "node:fs";
-import { DownloadJob, FinalArtifact, MediaArtifact, type DownloadJob as DownloadJobType } from "../shared/contracts.js";
+import { CompositionJob, DownloadJob, FinalArtifact, MediaArtifact, type CompositionJob as CompositionJobType, type DownloadJob as DownloadJobType } from "../shared/contracts.js";
 
 export class AppDatabase {
   private db: DatabaseSync;
@@ -10,7 +10,7 @@ export class AppDatabase {
     const dbPath=path.join(dataDir,"super-video-pro.sqlite");const existed=fs.existsSync(dbPath)&&fs.statSync(dbPath).size>0;
     this.db = new DatabaseSync(dbPath);
     this.db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
-    const version=Number((this.db.prepare("PRAGMA user_version").get() as {user_version:number}).user_version);if(existed&&version<2){this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");this.db.close();fs.copyFileSync(dbPath,`${dbPath}.backup-v${version}-to-v2`);this.db=new DatabaseSync(dbPath);this.db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");}
+    const version=Number((this.db.prepare("PRAGMA user_version").get() as {user_version:number}).user_version);if(existed&&version<3){this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");this.db.close();fs.copyFileSync(dbPath,`${dbPath}.backup-v${version}-to-v3`);this.db=new DatabaseSync(dbPath);this.db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");}
     this.migrate();
   }
   private migrate() {
@@ -21,11 +21,13 @@ export class AppDatabase {
       CREATE TABLE IF NOT EXISTS artifacts(id TEXT PRIMARY KEY, job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE, kind TEXT NOT NULL, payload TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS quarantined_records(entity TEXT NOT NULL, record_id TEXT NOT NULL, raw_payload TEXT NOT NULL, error TEXT NOT NULL, quarantined_at TEXT NOT NULL, PRIMARY KEY(entity, record_id));
       CREATE TABLE IF NOT EXISTS product_evidence(day TEXT NOT NULL, event TEXT NOT NULL, count INTEGER NOT NULL CHECK(count >= 0), PRIMARY KEY(day, event));
+      CREATE TABLE IF NOT EXISTS composition_jobs(id TEXT PRIMARY KEY, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, payload TEXT NOT NULL);
       INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (1, datetime('now'));
       INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (2, datetime('now'));
-      PRAGMA user_version = 2;`);
+      INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (3, datetime('now'));
+      PRAGMA user_version = 3;`);
   }
-  private quarantine(entity:"jobs"|"artifacts"|"settings",id:string,payload:string,error:unknown){const message=error instanceof Error?error.message:String(error);this.db.prepare("INSERT INTO quarantined_records(entity,record_id,raw_payload,error,quarantined_at) VALUES(?,?,?,?,datetime('now')) ON CONFLICT(entity,record_id) DO UPDATE SET raw_payload=excluded.raw_payload,error=excluded.error,quarantined_at=excluded.quarantined_at").run(entity,id,payload,message);const table=entity;const key=entity==="settings"?"key":"id";this.db.prepare(`DELETE FROM ${table} WHERE ${key}=?`).run(id);}
+  private quarantine(entity:"jobs"|"artifacts"|"settings"|"composition_jobs",id:string,payload:string,error:unknown){const message=error instanceof Error?error.message:String(error);this.db.prepare("INSERT INTO quarantined_records(entity,record_id,raw_payload,error,quarantined_at) VALUES(?,?,?,?,datetime('now')) ON CONFLICT(entity,record_id) DO UPDATE SET raw_payload=excluded.raw_payload,error=excluded.error,quarantined_at=excluded.quarantined_at").run(entity,id,payload,message);const table=entity;const key=entity==="settings"?"key":"id";this.db.prepare(`DELETE FROM ${table} WHERE ${key}=?`).run(id);}
   quarantineSetting(key:string,value:unknown,error:unknown){this.quarantine("settings",key,JSON.stringify(value),error);}
   private parseJob(id:string,payload:string):DownloadJobType|undefined{try{const parsed=DownloadJob.safeParse(JSON.parse(payload));if(parsed.success)return parsed.data;this.quarantine("jobs",id,payload,parsed.error);return undefined}catch(error){this.quarantine("jobs",id,payload,error);return undefined}}
   listJobs(limit = 100): DownloadJobType[] {
@@ -42,6 +44,10 @@ export class AppDatabase {
   setSetting(key: string, value: unknown) { this.db.prepare("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(key, JSON.stringify(value)); }
   incrementEvidence(day:string,event:string){this.db.prepare("INSERT INTO product_evidence(day,event,count) VALUES(?,?,1) ON CONFLICT(day,event) DO UPDATE SET count=count+1").run(day,event);}
   evidenceSummary(){return this.db.prepare("SELECT event,SUM(count) AS count,COUNT(DISTINCT day) AS active_days FROM product_evidence GROUP BY event ORDER BY event").all() as Array<{event:string;count:number;active_days:number}>;}
+  saveComposition(job:CompositionJobType){this.db.prepare("INSERT INTO composition_jobs(id,status,created_at,updated_at,payload) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,updated_at=excluded.updated_at,payload=excluded.payload").run(job.id,job.status,job.createdAt,job.updatedAt,JSON.stringify(job));}
+  private parseComposition(id:string,payload:string){try{const parsed=CompositionJob.safeParse(JSON.parse(payload));if(parsed.success)return parsed.data;this.quarantine("composition_jobs",id,payload,parsed.error);return undefined}catch(error){this.quarantine("composition_jobs",id,payload,error);return undefined}}
+  listCompositions(){const jobs:CompositionJobType[]=[];for(const row of this.db.prepare("SELECT id,payload FROM composition_jobs ORDER BY created_at DESC LIMIT 100").all() as Array<{id:string;payload:string}>){const job=this.parseComposition(row.id,row.payload);if(job)jobs.push(job)}return jobs;}
+  getComposition(id:string){const row=this.db.prepare("SELECT id,payload FROM composition_jobs WHERE id=?").get(id) as {id:string;payload:string}|undefined;return row?this.parseComposition(row.id,row.payload):undefined;}
   saveArtifact(artifact:{id:string;jobId:string;kind:string}){this.db.prepare("INSERT INTO artifacts(id,job_id,kind,payload) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,payload=excluded.payload").run(artifact.id,artifact.jobId,artifact.kind,JSON.stringify(artifact));}
   listArtifacts(jobId:string){const artifacts:unknown[]=[];for(const row of this.db.prepare("SELECT id,kind,payload FROM artifacts WHERE job_id=? ORDER BY rowid").all(jobId) as Array<{id:string;kind:string;payload:string}>){try{const raw=JSON.parse(String(row.payload));const parsed=row.kind==="final"?FinalArtifact.safeParse(raw):MediaArtifact.safeParse(raw);if(parsed.success)artifacts.push(raw);else this.quarantine("artifacts",String(row.id),String(row.payload),parsed.error)}catch(error){this.quarantine("artifacts",String(row.id),String(row.payload),error)}}return artifacts;}
   close() { this.db.close(); }

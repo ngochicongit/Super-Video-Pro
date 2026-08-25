@@ -37,6 +37,12 @@ export const FinalArtifact = z.object({
 });
 export type FinalArtifact = z.infer<typeof FinalArtifact>;
 
+export const CompositionStatus=z.enum(["queued","processing","validating","failed","completed","cancelled"]);
+export const CompositionSpec=z.object({videoPath:z.string().min(1).max(4096),audioPath:z.string().min(1).max(4096),destinationDir:z.string().min(1).max(4096),outputName:z.string().trim().max(120).optional()}).strict().refine(value=>value.videoPath!==value.audioPath,{message:"Video and audio inputs must be different"});
+export type CompositionSpec=z.infer<typeof CompositionSpec>;
+export const CompositionJob=z.object({id:z.string(),createdAt:z.string().datetime(),updatedAt:z.string().datetime(),status:CompositionStatus,spec:CompositionSpec,progress:z.number().min(0).max(1).default(0),outputPath:z.string().optional(),finalArtifact:FinalArtifact.optional(),error:z.unknown().optional()});
+export type CompositionJob=z.infer<typeof CompositionJob>;
+
 export const InspectMediaInput=z.object({sourceUrl:HttpUrl}).strict();
 export const CreateJobInput = z.object({ sourceUrl: HttpUrl, destinationDir: z.string().min(1).optional(), priority: z.number().int().min(0).max(100).default(50),selectedVariantId:z.string().optional(),resource:MediaResource.optional() }).strict();
 export const JobIdInput = z.object({ jobId: z.string().min(1) });
@@ -49,3 +55,5 @@ export const AppSettings = z.object({ downloadDir: z.string(), concurrency: z.nu
 export type AppSettings = z.infer<typeof AppSettings>;
 export const AppSettingsPatch=z.object({downloadDir:z.string().optional(),concurrency:z.number().int().min(1).max(8).optional(),perDomainConcurrency:z.number().int().min(1).max(4).optional(),cookiesFromBrowser:z.enum(["none","edge","chrome","firefox"]).optional(),allowThirdPartyXFallback:z.boolean().optional(),collectProductEvidence:z.boolean().optional(),historyRetentionDays:z.number().int().min(1).max(3650).optional(),logRetentionDays:z.number().int().min(1).max(365).optional(),backupRetentionCount:z.number().int().min(1).max(10).optional(),rememberUiState:z.boolean().optional(),lastSourceInput:z.string().max(10000).optional(),downloadMode:z.enum(["single","batch"]).optional(),queueSearch:z.string().max(200).optional(),queueStatusFilter:z.union([z.literal("all"),JobStatus]).optional(),recentUrls:z.array(HttpUrl).max(30).optional(),diagnosticsFileName:z.string().max(120).optional()}).strict();
 export const DiagnosticsExportInput=z.object({fileName:z.string().trim().max(120).optional()}).strict().default({});
+export const PickCompositionInput=z.object({kind:z.enum(["video","audio"])}).strict();
+export const CompositionIdInput=z.object({compositionId:z.string().min(1)}).strict();
