@@ -6,6 +6,7 @@ export const ipcContract = {
   "settings:update": { input: AppSettingsPatch, output: AppSettings },
   "dialog:download-dir": { input: z.object({}).default({}), output: z.string().nullable() },
   "dialog:composition-input": { input: PickCompositionInput, output: z.string().nullable() },
+  "dialog:composition-videos": { input: z.object({}).strict().default({}), output: z.array(z.string()).max(19) },
   "shell:show-item": { input: ShowItemInput, output: z.object({ shown: z.boolean() }) },
   "window:control": { input: WindowActionInput, output: z.object({ maximized: z.boolean() }) },
   "app:log-action": { input: UiLogInput, output: z.object({ logged: z.boolean() }) },

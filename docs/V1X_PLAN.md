@@ -413,7 +413,9 @@ Status: DONE
 
 ## V1.3.3 - Reachable multi-input evidence gate
 
-Status: DONE - LOCALLY PACKAGED AND VERIFIED; NOT EXTERNALLY RELEASED
+Status: DONE - RELEASED IN V1.3.0
+
+- Public release: `https://github.com/ngochicongit/Super-Video-Pro/releases/tag/v1.3.0`; tag targets merge commit `534fa13`, and the 1.3.0 installer asset is published with its documented SHA-256 and unsigned-Windows warning.
 
 - Audited the completed task list and confirmed V1.3.2 plus all six certified feature groups were complete and unchanged before this task.
 - Read the real user-data SQLite database without mutation: it contained no product-evidence rows and no Composition jobs, so the predefined multi-input gate remains closed and multi-input Composition was not opened.
@@ -429,7 +431,7 @@ Status: DONE - LOCALLY PACKAGED AND VERIFIED; NOT EXTERNALLY RELEASED
 
 ## V1.3.4 - Evidence gate transparency
 
-Status: DONE - LOCALLY PACKAGED AND VERIFIED; NOT EXTERNALLY RELEASED
+Status: DONE - RELEASED IN V1.3.0
 
 - Confirmed there were no open GitHub issues and no executable backlog items beyond the evidence-gated multi-input/Visual Editor work.
 - Replaced the misleading single `0/10` progress label with the complete predefined gate: active days, multi-input intents, completed exports and builder-abandonment percentage.
@@ -439,6 +441,21 @@ Status: DONE - LOCALLY PACKAGED AND VERIFIED; NOT EXTERNALLY RELEASED
 - Temporary runtime profile and screenshots were removed by bounded cleanup.
 - Release gate: PASS. `pnpm package` reran all 104 tests, typecheck and production builds before creating `release/Super Video Pro Setup 1.3.0.exe` (271,404,168 bytes, SHA-256 `0A823F62D75AEFF139A33203699FD27F5FCD282FD2D62A7B52F5FE9836B92493`). Windows reports the installer as `NotSigned`.
 - Clean NSIS install/uninstall: PASS with exit code 0; the isolated install directory was removed. No GitHub Release or external deployment is claimed.
+
+## V1.3.5 - Multi-input Composition
+
+Status: DONE - LOCALLY PACKAGED AND VERIFIED; NOT EXTERNALLY RELEASED
+
+- Product owner explicitly overrode the evidence STOP gate on 2026-08-26 and requested implementation. The decision is recorded as an override; stored evidence remains untouched and no synthetic events were inserted.
+- Expanded the backward-compatible Composition contract from one video to one primary plus up to 19 unique ordered video inputs and one audio track. Existing single-video jobs remain valid.
+- Added a native multi-file picker, bounded de-duplication, visible clip order, up/down ordering controls and per-clip removal. The first video remains the target resolution for normalized concatenation.
+- Multi-video execution validates every input, compares audio duration against the sum of video durations, normalizes each clip, concatenates in declared order, encodes H.264/AAC, validates the output and atomically finalizes it through the existing lifecycle.
+- Single-video exports retain the existing stream-copy path. Product evidence now records `composition.multi_input_intent` only for actual multi-video jobs instead of misclassifying every Composition start.
+- Integration proof concatenated two 0.5-second clips with a one-second audio track, produced a validated FinalArtifact with all three ordered source IDs and recorded exactly one multi-input intent.
+- `pnpm verify`: PASS with 27 test files and 108 tests; production build PASS; production dependency audit reports no known vulnerabilities.
+- Production-build visual/DOM smoke at 1180px: PASS. Multi-input hint, ordered-video panel and disabled-until-primary add action rendered without overflow. Temporary profile and screenshot were removed by bounded cleanup.
+- Release gate: PASS. `pnpm package` reran all 108 tests, typecheck and production builds before creating `release/Super Video Pro Setup 1.3.1.exe` (271,405,570 bytes, SHA-256 `F2509A9023EF5644427A83B3DE5022E22868E031A99125EBC807589444D302FF`). Windows reports the installer as `NotSigned`.
+- Clean NSIS install/uninstall: PASS with exit code 0; the isolated install directory was removed. No v1.3.1 GitHub Release or external deployment is claimed.
 
 ## Stable feature certification policy
 

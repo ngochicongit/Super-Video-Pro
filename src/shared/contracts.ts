@@ -38,7 +38,7 @@ export const FinalArtifact = z.object({
 export type FinalArtifact = z.infer<typeof FinalArtifact>;
 
 export const CompositionStatus=z.enum(["queued","processing","validating","failed","completed","cancelled"]);
-export const CompositionSpec=z.object({videoPath:z.string().min(1).max(4096),audioPath:z.string().min(1).max(4096),destinationDir:z.string().min(1).max(4096),outputName:z.string().trim().max(120).optional()}).strict().refine(value=>value.videoPath!==value.audioPath,{message:"Video and audio inputs must be different"});
+export const CompositionSpec=z.object({videoPath:z.string().min(1).max(4096),additionalVideoPaths:z.array(z.string().min(1).max(4096)).max(19).optional(),audioPath:z.string().min(1).max(4096),destinationDir:z.string().min(1).max(4096),outputName:z.string().trim().max(120).optional()}).strict().superRefine((value,context)=>{const videos=[value.videoPath,...(value.additionalVideoPaths??[])];if(videos.includes(value.audioPath))context.addIssue({code:"custom",message:"Video and audio inputs must be different"});if(new Set(videos).size!==videos.length)context.addIssue({code:"custom",message:"Video inputs must be unique"});});
 export type CompositionSpec=z.infer<typeof CompositionSpec>;
 export const CompositionJob=z.object({id:z.string(),createdAt:z.string().datetime(),updatedAt:z.string().datetime(),status:CompositionStatus,spec:CompositionSpec,progress:z.number().min(0).max(1).default(0),outputPath:z.string().optional(),finalArtifact:FinalArtifact.optional(),error:z.unknown().optional()});
 export type CompositionJob=z.infer<typeof CompositionJob>;
