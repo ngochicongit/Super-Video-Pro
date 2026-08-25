@@ -100,5 +100,30 @@
   "composition_error_audio_stream": "File âm thanh không chứa luồng âm thanh hợp lệ.",
   "composition_error_duration": "Thời lượng video và âm thanh lệch nhau quá 0,5 giây.",
   "composition_error_output_exists": "File xuất đã tồn tại. Hãy chọn tên khác.",
-  "composition_error_processing": "FFmpeg không thể ghép hai file đã chọn."
+  "composition_error_processing": "FFmpeg không thể ghép hai file đã chọn.",
+  "navigation": "Điều hướng chức năng",
+  "tab_download": "Tải xuống",
+  "tab_composition": "Ghép media",
+  "tab_tasks": "Tác vụ",
+  "tab_history": "Lịch sử",
+  "tab_settings": "Cài đặt",
+  "download_tab_hint": "Phân tích liên kết, chọn chất lượng và tạo tác vụ tải xuống.",
+  "download_destination_summary": "File sẽ được lưu tại",
+  "tasks_hint": "Theo dõi riêng các tác vụ tải xuống và xử lý media đang hoạt động.",
+  "history_hint": "Xem lại các tác vụ đã hoàn thành, thất bại hoặc bị hủy.",
+  "download_tasks": "Tác vụ tải xuống",
+  "download_history": "Lịch sử tải xuống",
+  "composition_jobs": "Tác vụ ghép media",
+  "active_tasks_empty": "Không có tác vụ tải xuống đang hoạt động.",
+  "history_empty": "Chưa có lịch sử tải xuống.",
+  "no_processing_tasks": "Không có tác vụ ghép media đang hoạt động.",
+  "no_composition_history": "Chưa có lịch sử ghép media.",
+  "composition_queued": "Đã thêm vào danh sách tác vụ xử lý.",
+  "settings_hint": "Quản lý tải xuống, lưu trữ, công cụ, quyền riêng tư và chẩn đoán.",
+  "settings_download": "Tải xuống và kết nối",
+  "settings_storage": "Lưu trữ và giao diện",
+  "settings_tools": "Công cụ và cập nhật",
+  "settings_diagnostics": "Nhật ký chẩn đoán"
+  ,"per_domain_concurrent": "Tải đồng thời trên mỗi tên miền"
+  ,"settings_privacy": "Quyền riêng tư và nguồn bên thứ ba"
 }
