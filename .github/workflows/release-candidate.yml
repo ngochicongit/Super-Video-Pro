@@ -1,0 +1,92 @@
+name: Signed update candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      installer_url:
+        description: Future HTTPS URL for the installer in the signed manifest
+        required: true
+        type: string
+      channel:
+        description: Update channel
+        required: true
+        default: stable
+        type: choice
+        options:
+          - stable
+          - beta
+
+permissions:
+  contents: read
+
+concurrency:
+  group: signed-update-candidate
+  cancel-in-progress: false
+
+jobs:
+  candidate:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Validate protected release inputs
+        shell: pwsh
+        env:
+          SVP_UPDATE_INSTALLER_URL: ${{ inputs.installer_url }}
+        run: |
+          if ("${{ github.ref }}" -ne "refs/heads/main") {
+            throw "Signed release candidates may only be created from main"
+          }
+          $url = $null
+          if (-not [Uri]::TryCreate($env:SVP_UPDATE_INSTALLER_URL, [UriKind]::Absolute, [ref]$url)) {
+            throw "installer_url must be an absolute URL"
+          }
+          if ($url.Scheme -ne "https" -or $url.UserInfo) {
+            throw "installer_url must use HTTPS and must not contain credentials"
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install pnpm
+        run: npm install --global pnpm@11.19.0
+
+      - name: Install portable FFmpeg
+        run: choco install ffmpeg --yes --no-progress
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare pinned runtime tools
+        run: node scripts/prepare-tools.mjs
+
+      - name: Build unsigned release candidate
+        run: pnpm package
+
+      - name: Create signed update metadata bundle
+        shell: pwsh
+        env:
+          SVP_UPDATE_PRIVATE_KEY_PEM: ${{ secrets.SVP_UPDATE_ED25519_PRIVATE_KEY_PEM }}
+          SVP_UPDATE_INSTALLER_URL: ${{ inputs.installer_url }}
+          SVP_UPDATE_CHANNEL: ${{ inputs.channel }}
+        run: |
+          if (-not $env:SVP_UPDATE_PRIVATE_KEY_PEM) { throw "Repository secret SVP_UPDATE_ED25519_PRIVATE_KEY_PEM is required" }
+          $installer = Get-ChildItem release -Filter "Super Video Pro Setup *.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $installer) { throw "NSIS installer was not produced" }
+          New-Item -ItemType Directory -Force release-candidate | Out-Null
+          $env:SVP_INSTALLER_PATH = $installer.FullName
+          $env:SVP_UPDATE_OUTPUT = Join-Path $PWD "release-candidate\update-manifest.json"
+          node scripts/create-update-manifest.mjs
+          Copy-Item -LiteralPath $installer.FullName -Destination release-candidate
+
+      - name: Upload ephemeral candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: super-video-pro-signed-update-candidate
+          path: release-candidate/*
+          if-no-files-found: error
+          retention-days: 7
