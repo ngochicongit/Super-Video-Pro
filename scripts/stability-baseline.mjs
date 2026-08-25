@@ -15,7 +15,7 @@ const groups={
 async function fingerprint(files){const hash=createHash("sha256");for(const file of [...files].sort()){hash.update(file);hash.update("\0");const content=(await readFile(path.join(root,file),"utf8")).replace(/\r\n/g,"\n");hash.update(content);hash.update("\0");}return hash.digest("hex");}
 const current=Object.fromEntries(await Promise.all(Object.entries(groups).map(async([name,files])=>[name,{fingerprint:await fingerprint(files),files}])));
 if(process.argv.includes("--certify")){
-  const data={schemaVersion:1,certifiedAt:new Date().toISOString(),policy:"Skip repeated manual/real-site/visual certification only while the group fingerprint is unchanged. Always keep pnpm verify in the delivery gate.",validation:{verify:"27 files / 101 tests PASS",directMp4:"PASS",publicHls:"PASS",uiDownload:"PASS, 788493 bytes, no .part",visualTabs:"PASS at 1180x760",productionAudit:"no known vulnerabilities"},groups:current};
+  const data={schemaVersion:1,certifiedAt:new Date().toISOString(),policy:"Skip repeated manual/real-site/visual certification only while the group fingerprint is unchanged. Always keep pnpm verify in the delivery gate.",validation:{verify:"27 files / 103 tests PASS",directMp4:"PASS",publicHls:"PASS",uiDownload:"PASS, 788493 bytes, no .part",visualTabs:"PASS at 1180x760; V1.3.3 isolated Settings runtime DOM smoke PASS",productionAudit:"no known vulnerabilities"},groups:current};
   await writeFile(baselinePath,`${JSON.stringify(data,null,2)}\n`);
   console.log(`Certified ${Object.keys(groups).length} stable feature groups.`);
   process.exit(0);

@@ -11,6 +11,7 @@ export const ipcContract = {
   "app:log-action": { input: UiLogInput, output: z.object({ logged: z.boolean() }) },
   "diagnostics:export": { input: DiagnosticsExportInput, output: z.string().nullable() },
   "evidence:gate": { input: z.object({}).default({}), output: z.object({passed:z.boolean(),activeDays:z.number().int().nonnegative(),bounceRate:z.number().nonnegative(),thresholds:z.object({minimumActiveDays:z.number(),minimumMultiInputIntents:z.number(),minimumCompletedExports:z.number(),maximumBounceRate:z.number()}),summary:z.record(z.string(),z.object({count:z.number().int().nonnegative(),activeDays:z.number().int().nonnegative()}))}) },
+  "evidence:multi-input-intent": { input: z.object({}).strict().default({}), output: z.object({recorded:z.boolean(),gate:z.object({passed:z.boolean(),activeDays:z.number().int().nonnegative(),bounceRate:z.number().nonnegative(),thresholds:z.object({minimumActiveDays:z.number(),minimumMultiInputIntents:z.number(),minimumCompletedExports:z.number(),maximumBounceRate:z.number()}),summary:z.record(z.string(),z.object({count:z.number().int().nonnegative(),activeDays:z.number().int().nonnegative()}))})}) },
   "evidence:export": { input: z.object({}).default({}), output: z.string().nullable() },
   "compositions:list": { input: z.object({}).default({}), output: z.array(CompositionJob) },
   "compositions:create": { input: CompositionSpec, output: CompositionJob },
