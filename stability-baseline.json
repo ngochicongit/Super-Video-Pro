@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "certifiedAt": "2026-08-25T17:16:00.152Z",
+  "policy": "Skip repeated manual/real-site/visual certification only while the group fingerprint is unchanged. Always keep pnpm verify in the delivery gate.",
+  "validation": {
+    "verify": "27 files / 101 tests PASS",
+    "directMp4": "PASS",
+    "publicHls": "PASS",
+    "uiDownload": "PASS, 788493 bytes, no .part",
+    "visualTabs": "PASS at 1180x760",
+    "productionAudit": "no known vulnerabilities"
+  },
+  "groups": {
+    "download-and-resume": {
+      "fingerprint": "533b6b9fd5bb6dfe3f78819706aad7fad9abc0da361acab35c27fd6ee37019ce",
+      "files": [
+        "src/main/downloader.ts",
+        "src/main/jobs.ts",
+        "src/main/validation.ts",
+        "src/main/storage.ts",
+        "tests/download.integration.test.ts",
+        "tests/job-manager.integration.test.ts",
+        "tests/external-progress.test.ts",
+        "tests/retry-processing.integration.test.ts"
+      ]
+    },
+    "media-extraction-and-x": {
+      "fingerprint": "4270cdcc07c63c5595cabf2ae1e2a76608094ecb5bbf71413833d6fdfd12b8c9",
+      "files": [
+        "src/main/extraction.ts",
+        "src/main/network-policy.ts",
+        "tests/extraction.test.ts",
+        "tests/network-policy.test.ts",
+        "tests/stream.integration.test.ts"
+      ]
+    },
+    "ipc-storage-settings-diagnostics": {
+      "fingerprint": "9787460802a058403e9867bcc5b0ea25352f563372c4cfb2a80a20b961433516",
+      "files": [
+        "src/shared/contracts.ts",
+        "src/shared/ipc.ts",
+        "src/main/ipc.ts",
+        "src/main/db.ts",
+        "src/main/diagnostics.ts",
+        "src/main/jobs.ts",
+        "tests/ipc.test.ts",
+        "tests/db.test.ts",
+        "tests/diagnostics.test.ts",
+        "tests/retention.test.ts",
+        "tests/ui-state.test.ts"
+      ]
+    },
+    "composition": {
+      "fingerprint": "b65b55b2d17dd47034ff18cbbef940038ea4bc15f9d10b5ff0a82503415d2ea0",
+      "files": [
+        "src/main/composition.ts",
+        "src/main/ipc-composition-handlers.ts",
+        "src/renderer/composition-builder.tsx",
+        "src/renderer/composition-jobs.tsx",
+        "tests/composition.integration.test.ts",
+        "tests/product-evidence.test.ts"
+      ]
+    },
+    "tabbed-ui-and-localization": {
+      "fingerprint": "b1ca98f732171880d27cd49d0b4131bb8df92269bf54bd4ff8be456df16a233d",
+      "files": [
+        "src/main/index.ts",
+        "src/renderer/App.tsx",
+        "src/renderer/app-tabs.tsx",
+        "src/renderer/download-composer.tsx",
+        "src/renderer/job-queue.tsx",
+        "src/renderer/settings-panel.tsx",
+        "src/renderer/styles.css",
+        "src/locales/vi.json",
+        "tests/tabbed-ui.test.ts",
+        "tests/renderer-store.test.ts"
+      ]
+    },
+    "safe-update-check": {
+      "fingerprint": "c569cdfd474d9bdb845d3e060114c10e3f21a15ff493d08b81efd6d3488b579b",
+      "files": [
+        "src/main/app-updater.ts",
+        "src/main/network-policy.ts",
+        "src/shared/ipc.ts",
+        "assets/update-public.pem",
+        "tests/app-updater.test.ts",
+        "tests/bundled-update-key.test.ts",
+        "tests/update-manifest.test.ts",
+        "tests/release-policy.test.ts"
+      ]
+    }
+  }
+}
