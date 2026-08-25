@@ -281,7 +281,7 @@ Deferred by evidence, not incomplete implementation:
 
 ## V1.2.9 - Delivery foundation and signed-update infrastructure
 
-Status: IN PROGRESS - PHASE 2A MERGED; PHASE 2A.1 IMPLEMENTED; PHASE 2B BLOCKED ON CREDENTIALS
+Status: IN PROGRESS - PHASES 2A AND 2A.1 DONE; PHASE 2B BLOCKED ON CREDENTIALS
 
 ### Phase 1 - Git and CI gate
 
@@ -314,13 +314,14 @@ Status: DONE - MERGED TO MAIN IN PR #2; RUNTIME DELIVERY REMAINS DISABLED
 
 ### Phase 2a.1 - Runtime signed-update check
 
-Status: IMPLEMENTED AND TESTED ON FEATURE BRANCH; NOT YET MERGED
+Status: DONE - MERGED TO MAIN IN PR #3
 
 - Configure only through both `SVP_SIGNED_UPDATE_MANIFEST_URL` and `SVP_UPDATE_ED25519_PUBLIC_KEY_PEM`; partial or absent configuration keeps the UI capability disabled.
 - Fetch through the bounded outbound policy, verify Ed25519 authenticity before version comparison, and reject invalid semantic versions.
 - This phase is check-only. A verified available update is shown, but automatic download and installation remain explicitly blocked until Phase 2b OS signing is configured.
 - Stable/prerelease comparison, authentic availability checks, partial-configuration failure and blocked download/install handoff have regression coverage. Update status messages shown by the renderer come from the Vietnamese locale file.
 - Verification: `pnpm verify` PASS with 22 test files and 87 tests; typecheck and production build PASS. Production dependency audit reports no known vulnerabilities, and bounded task cleanup completed.
+- Hosted verification: PR #3 passed its required Verify check, merged as `c0eb24a`, and the post-merge `main` Verify run #23 passed in 1 minute 12 seconds. Phase 2a.1 is closed; no automatic download/install claim is made.
 
 ### Remaining gates
 
