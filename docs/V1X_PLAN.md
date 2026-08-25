@@ -325,7 +325,9 @@ Status: DONE - MERGED TO MAIN IN PR #3
 
 ### Remaining gates
 
-- Phase 2b requires Windows/macOS signing identities and CI secrets; automatic installation stays disabled until that work is complete.
+- Phase 2b Windows signing infrastructure is implemented on a feature branch: the manual candidate job uses the protected `windows-signing` environment, requires `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD` and `SVP_UPDATE_ED25519_PRIVATE_KEY_PEM`, enables electron-builder fail-closed signing, and rejects artifacts unless both the NSIS installer and unpacked application have valid Authenticode signatures with trusted timestamps.
+- Activation remains BLOCKED: no local Code Signing certificate with a private key exists and the GitHub environment secrets do not yet contain a real PFX/base64 certificate, password or Ed25519 manifest private key. Do not mark Phase 2b DONE or enable automatic installation until a real signed workflow run passes.
+- macOS signing/notarization remains out of scope because the repository currently has no macOS packaging target.
 - Composition remains closed until the already-implemented local evidence gate reaches its pre-declared thresholds; infrastructure alone does not open the feature.
 - ProcessingQueue requires a real Composition workflow; Visual Editor requires the previously agreed usage thresholds. These conditional STOP gates remain active.
 
