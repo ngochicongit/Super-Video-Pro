@@ -305,6 +305,8 @@ Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
 - Added streaming installer verification for exact byte size and SHA-256 before any future handoff to installation.
 - Added tests for authentic manifests, signature tampering, invalid schema/URL and installer integrity.
 - No private key or certificate is stored in the repository. Existing automatic-update UI remains disabled unless separately configured; this phase does not claim OS code signing or a secure end-to-end update channel.
+- Added a manual, least-privilege release-candidate workflow. It builds the current Windows installer, creates Ed25519-signed metadata from a repository secret, verifies the signature immediately and uploads an immutable seven-day artifact bundle.
+- The candidate workflow does not create a GitHub Release, publish a feed or enable automatic installation. Its installer remains unsigned at the OS level until Phase 2b credentials exist.
 
 ### Remaining gates
 

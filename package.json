@@ -19,6 +19,7 @@
     "task:cleanup": "node scripts/cleanup-task-artifacts.mjs",
     "verify": "pnpm typecheck && pnpm test && pnpm build",
     "metrics": "node scripts/codebase-metrics.mjs"
+    ,"release:manifest": "node scripts/create-update-manifest.mjs"
   },
   "dependencies": {
     "electron-updater": "6.8.9",
