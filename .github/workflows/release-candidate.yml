@@ -27,7 +27,6 @@ jobs:
   candidate:
     runs-on: windows-latest
     timeout-minutes: 35
-    environment: windows-signing
     steps:
       - name: Validate protected release inputs
         shell: pwsh
@@ -45,16 +44,12 @@ jobs:
             throw "installer_url must use HTTPS and must not contain credentials"
           }
 
-      - name: Validate signing credentials
+      - name: Validate manifest signing credential
         shell: pwsh
         env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           SVP_UPDATE_PRIVATE_KEY_PEM: ${{ secrets.SVP_UPDATE_ED25519_PRIVATE_KEY_PEM }}
         run: |
-          if (-not $env:WIN_CSC_LINK) { throw "windows-signing secret WIN_CSC_LINK is required" }
-          if (-not $env:WIN_CSC_KEY_PASSWORD) { throw "windows-signing secret WIN_CSC_KEY_PASSWORD is required" }
-          if (-not $env:SVP_UPDATE_PRIVATE_KEY_PEM) { throw "windows-signing secret SVP_UPDATE_ED25519_PRIVATE_KEY_PEM is required" }
+          if (-not $env:SVP_UPDATE_PRIVATE_KEY_PEM) { throw "Repository secret SVP_UPDATE_ED25519_PRIVATE_KEY_PEM is required" }
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -76,11 +71,8 @@ jobs:
       - name: Prepare pinned runtime tools
         run: node scripts/prepare-tools.mjs
 
-      - name: Build and verify signed release candidate
-        env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: pnpm package:signed
+      - name: Build personal release candidate
+        run: pnpm package
 
       - name: Create signed update metadata bundle
         shell: pwsh
@@ -97,7 +89,6 @@ jobs:
           $env:SVP_UPDATE_OUTPUT = Join-Path $PWD "release-candidate\update-manifest.json"
           node scripts/create-update-manifest.mjs
           Copy-Item -LiteralPath $installer.FullName -Destination release-candidate
-          Copy-Item -LiteralPath "release\authenticode-report.txt" -Destination release-candidate
 
       - name: Upload ephemeral candidate
         uses: actions/upload-artifact@v7
