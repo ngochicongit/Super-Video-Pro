@@ -294,6 +294,7 @@ Status: DONE
 - Local gate result: PASS; 21 test files, 74 tests, typecheck and production build. Production dependency audit reports no known vulnerabilities.
 - Hosted clean-checkout gate: PASS in GitHub Actions `Verify` run #7 at commit `1f48029`; Node/pnpm, portable FFmpeg, pinned runtime tools, all tests, build, production audit and metrics completed in 1 minute 13 seconds.
 - A hosted PR run exposed a false 5-second timeout while four pinned Windows tool binaries started concurrently; the integration test now has an explicit 30-second process-start budget while retaining exact exit/version assertions.
+- Hosted Windows contention later affected multiple SQLite/FFmpeg integration tests, confirming the timeout belonged at the CI test-runner boundary. CI now uses a bounded 30-second test/hook timeout, while local unit feedback retains the 5-second default. Feature branches run Verify through the pull-request event only; `main` retains push verification, eliminating duplicate runs for the same PR commit.
 
 ### Phase 2a - Signed update metadata (certificate-independent)
 
