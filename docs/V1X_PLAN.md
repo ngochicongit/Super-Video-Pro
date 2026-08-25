@@ -427,6 +427,19 @@ Status: DONE - LOCALLY PACKAGED AND VERIFIED; NOT EXTERNALLY RELEASED
 - Known limitations: multi-input Composition and Visual Editor remain intentionally closed by the evidence gate; Windows platform signing remains unavailable. Rollback is to the previous verified installer retained under `release/`; the local release operator owns rollback because no external deployment occurred.
 - Release state is explicit: the local installer is a verified release candidate, but no Git commit, push, GitHub Release or external deployment was performed in this task.
 
+## V1.3.4 - Evidence gate transparency
+
+Status: DONE - LOCALLY PACKAGED AND VERIFIED; NOT EXTERNALLY RELEASED
+
+- Confirmed there were no open GitHub issues and no executable backlog items beyond the evidence-gated multi-input/Visual Editor work.
+- Replaced the misleading single `0/10` progress label with the complete predefined gate: active days, multi-input intents, completed exports and builder-abandonment percentage.
+- Added an explicit closed/open gate status driven by the backend `passed` value. No threshold was weakened and no evidence was synthesized.
+- `pnpm verify`: PASS with 27 test files and 104 tests; production build PASS; production dependency audit reports no known vulnerabilities.
+- Isolated production-build smoke at 1180px: PASS. The Settings page rendered `0/3`, `0/10`, `0/5` and `0.0% ≤ 50%`, reported the gate closed and had no horizontal overflow. Visual inspection confirmed the four-column gate remained readable.
+- Temporary runtime profile and screenshots were removed by bounded cleanup.
+- Release gate: PASS. `pnpm package` reran all 104 tests, typecheck and production builds before creating `release/Super Video Pro Setup 1.3.0.exe` (271,404,168 bytes, SHA-256 `0A823F62D75AEFF139A33203699FD27F5FCD282FD2D62A7B52F5FE9836B92493`). Windows reports the installer as `NotSigned`.
+- Clean NSIS install/uninstall: PASS with exit code 0; the isolated install directory was removed. No GitHub Release or external deployment is claimed.
+
 ## Stable feature certification policy
 
 Status: ACTIVE
