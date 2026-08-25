@@ -5,9 +5,9 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
-function runKeygen(outputDirectory: string) {
+function runKeygen(outputDirectory: string, includePnpmDelimiter = false) {
   return new Promise<{ code: number; stdout: string; stderr: string }>((resolve, reject) => {
-    const child = spawn(process.execPath, ["scripts/generate-update-keypair.mjs", outputDirectory], { cwd: process.cwd(), windowsHide: true });
+    const child = spawn(process.execPath, ["scripts/generate-update-keypair.mjs", ...(includePnpmDelimiter ? ["--"] : []), outputDirectory], { cwd: process.cwd(), windowsHide: true });
     let stdout = ""; let stderr = "";
     child.stdout.on("data", chunk => stdout += String(chunk));
     child.stderr.on("data", chunk => stderr += String(chunk));
@@ -20,7 +20,7 @@ describe("update key generation", () => {
   it("creates a usable pair outside the repository without printing the private key", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "svp-keygen-"));
     try {
-      const result = await runKeygen(root);
+      const result = await runKeygen(root, true);
       expect(result.code).toBe(0);
       expect(result.stdout).not.toContain("BEGIN PRIVATE KEY");
       const privateKey = await fs.readFile(path.join(root, "svp-update-private.pem"), "utf8");
