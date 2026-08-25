@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "certifiedAt": "2026-08-25T17:29:59.233Z",
+  "certifiedAt": "2026-08-25T19:00:13.665Z",
   "policy": "Skip repeated manual/real-site/visual certification only while the group fingerprint is unchanged. Always keep pnpm verify in the delivery gate.",
   "validation": {
-    "verify": "27 files / 103 tests PASS",
+    "verify": "27 files / 104 tests PASS",
     "directMp4": "PASS",
     "publicHls": "PASS",
     "uiDownload": "PASS, 788493 bytes, no .part",
-    "visualTabs": "PASS at 1180x760; V1.3.3 isolated Settings runtime DOM smoke PASS",
+    "visualTabs": "PASS at 1180x760; V1.3.4 complete evidence gate visual/DOM smoke PASS",
     "productionAudit": "no known vulnerabilities"
   },
   "groups": {
@@ -62,7 +62,7 @@
       ]
     },
     "tabbed-ui-and-localization": {
-      "fingerprint": "f047b8c1a85ca2228c92339dfe99cfe9009962ee1d651b72aecff34869cab064",
+      "fingerprint": "e21e6265878ef9b76bd93332391a2cab10d18b1cd8a44d012d41e07a68353f1c",
       "files": [
         "src/main/index.ts",
         "src/renderer/App.tsx",
