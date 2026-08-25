@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "certifiedAt": "2026-08-25T17:16:00.152Z",
+  "certifiedAt": "2026-08-25T17:19:31.706Z",
   "policy": "Skip repeated manual/real-site/visual certification only while the group fingerprint is unchanged. Always keep pnpm verify in the delivery gate.",
   "validation": {
     "verify": "27 files / 101 tests PASS",
@@ -12,7 +12,7 @@
   },
   "groups": {
     "download-and-resume": {
-      "fingerprint": "533b6b9fd5bb6dfe3f78819706aad7fad9abc0da361acab35c27fd6ee37019ce",
+      "fingerprint": "722920b48cee09009da42308f51f5710d68129144bb71e211521eba977238b25",
       "files": [
         "src/main/downloader.ts",
         "src/main/jobs.ts",
@@ -35,7 +35,7 @@
       ]
     },
     "ipc-storage-settings-diagnostics": {
-      "fingerprint": "9787460802a058403e9867bcc5b0ea25352f563372c4cfb2a80a20b961433516",
+      "fingerprint": "0b7c3f794259deeff249273a713b2832f83f226a6d670689a076d7dd37ebbad7",
       "files": [
         "src/shared/contracts.ts",
         "src/shared/ipc.ts",
@@ -51,7 +51,7 @@
       ]
     },
     "composition": {
-      "fingerprint": "b65b55b2d17dd47034ff18cbbef940038ea4bc15f9d10b5ff0a82503415d2ea0",
+      "fingerprint": "75322fb0c072b5d2ce389a05d60a01414fcde1e145bdee28339de0a3dd388128",
       "files": [
         "src/main/composition.ts",
         "src/main/ipc-composition-handlers.ts",
@@ -62,7 +62,7 @@
       ]
     },
     "tabbed-ui-and-localization": {
-      "fingerprint": "b1ca98f732171880d27cd49d0b4131bb8df92269bf54bd4ff8be456df16a233d",
+      "fingerprint": "af273d4b34e7bdcfef6593ed478b7b180d3a7dae39a1633f566c9e0b4c8f1a12",
       "files": [
         "src/main/index.ts",
         "src/renderer/App.tsx",
@@ -77,7 +77,7 @@
       ]
     },
     "safe-update-check": {
-      "fingerprint": "c569cdfd474d9bdb845d3e060114c10e3f21a15ff493d08b81efd6d3488b579b",
+      "fingerprint": "98c1c7d707d22f22959b9c214907610f951b41af4a8159538472e407d5942e29",
       "files": [
         "src/main/app-updater.ts",
         "src/main/network-policy.ts",
