@@ -293,6 +293,7 @@ Status: DONE
 - Generated and runtime-only trees remain excluded from Git: dependencies, builds, installers, outputs, coverage, SQLite runtime state and bundled tool binaries.
 - Local gate result: PASS; 21 test files, 74 tests, typecheck and production build. Production dependency audit reports no known vulnerabilities.
 - Hosted clean-checkout gate: PASS in GitHub Actions `Verify` run #7 at commit `1f48029`; Node/pnpm, portable FFmpeg, pinned runtime tools, all tests, build, production audit and metrics completed in 1 minute 13 seconds.
+- A hosted PR run exposed a false 5-second timeout while four pinned Windows tool binaries started concurrently; the integration test now has an explicit 30-second process-start budget while retaining exact exit/version assertions.
 
 ### Phase 2a - Signed update metadata (certificate-independent)
 
