@@ -281,7 +281,7 @@ Deferred by evidence, not incomplete implementation:
 
 ## V1.2.9 - Delivery foundation and signed-update infrastructure
 
-Status: IN PROGRESS - PHASES 2A AND 2A.1 DONE; PHASE 2B REMOVED; SIGNED CANDIDATE RUN PENDING
+Status: DONE - PHASES 2A AND 2A.1 VERIFIED; PHASE 2B REMOVED BY PRODUCT DECISION
 
 ### Phase 1 - Git and CI gate
 
@@ -311,6 +311,8 @@ Status: DONE - MERGED TO MAIN IN PR #2; RUNTIME DELIVERY REMAINS DISABLED
 - Hardened candidate generation so installer SHA-256 is calculated with a stream instead of buffering the complete installer in memory. File creation is covered end to end, verifies its own signature and refuses to overwrite an existing candidate manifest.
 - Restricted signed candidate creation to `main`, rejects non-HTTPS or credential-bearing installer URLs before checkout/build, and serializes candidate runs so signing jobs cannot overlap.
 - The candidate workflow does not create a GitHub Release, publish a feed or enable automatic installation. Personal-distribution installers intentionally remain unsigned at the OS level.
+- Production candidate proof: workflow run `32828009212` passed on `main` commit `2e987ec` after building the NSIS installer, signing the manifest with the repository Ed25519 secret, verifying that signature and uploading artifact `super-video-pro-signed-update-candidate` (207,771,891 bytes, seven-day retention, artifact ID `9555738085`).
+- The first production attempt exposed electron-builder's implicit CI publishing behavior. Packaging now always passes `--publish never`, with regression coverage, so the least-privilege workflow needs no GitHub publication token and cannot silently create a release.
 
 ### Phase 2a.1 - Runtime signed-update check
 
