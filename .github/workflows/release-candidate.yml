@@ -19,11 +19,31 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: signed-update-candidate
+  cancel-in-progress: false
+
 jobs:
   candidate:
     runs-on: windows-latest
     timeout-minutes: 35
     steps:
+      - name: Validate protected release inputs
+        shell: pwsh
+        env:
+          SVP_UPDATE_INSTALLER_URL: ${{ inputs.installer_url }}
+        run: |
+          if ("${{ github.ref }}" -ne "refs/heads/main") {
+            throw "Signed release candidates may only be created from main"
+          }
+          $url = $null
+          if (-not [Uri]::TryCreate($env:SVP_UPDATE_INSTALLER_URL, [UriKind]::Absolute, [ref]$url)) {
+            throw "installer_url must be an absolute URL"
+          }
+          if ($url.Scheme -ne "https" -or $url.UserInfo) {
+            throw "installer_url must use HTTPS and must not contain credentials"
+          }
+
       - name: Checkout
         uses: actions/checkout@v6
 

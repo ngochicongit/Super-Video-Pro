@@ -275,9 +275,9 @@ Verification evidence:
 
 Deferred by evidence, not incomplete implementation:
 
-- No signed update channel is shipped because no feed/signing infrastructure has been provided; the UI now accurately hides the capability.
+- Signed update delivery was deferred at the V1.2.8 boundary; Phase 2a infrastructure is now implemented on PR #2, while runtime delivery and OS signing remain gated below.
 - Composition, ProcessingJob/Queue, QueryLayer, FeatureFlagService and Visual Editor remain frozen until a second real workflow requires them.
-- Git commit/CI enforcement remains unavailable because this workspace is not a Git worktree; release packaging itself is verify-gated.
+- Git and hosted CI enforcement were added in V1.2.9; release packaging also remains verify-gated locally.
 
 ## V1.2.9 - Delivery foundation and signed-update infrastructure
 
@@ -296,7 +296,7 @@ Status: DONE
 
 ### Phase 2a - Signed update metadata (certificate-independent)
 
-Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
+Status: IMPLEMENTED AND TESTED ON PR #2; NOT YET MERGED OR ENABLED FOR RUNTIME UPDATE DELIVERY
 
 - Added a strict versioned manifest contract containing channel, version, publication time, HTTPS installer URL, SHA-256, byte size and optional compatibility/release-note metadata.
 - Added deterministic canonical serialization and Ed25519 signature verification. Unknown fields, insecure URLs and tampered metadata are rejected.
@@ -307,12 +307,13 @@ Status: IMPLEMENTED AND TESTED; NOT YET ENABLED FOR RUNTIME UPDATE DELIVERY
 - No private key or certificate is stored in the repository. Existing automatic-update UI remains disabled unless separately configured; this phase does not claim OS code signing or a secure end-to-end update channel.
 - Added a manual, least-privilege release-candidate workflow. It builds the current Windows installer, creates Ed25519-signed metadata from a repository secret, verifies the signature immediately and uploads an immutable seven-day artifact bundle.
 - Hardened candidate generation so installer SHA-256 is calculated with a stream instead of buffering the complete installer in memory. File creation is covered end to end, verifies its own signature and refuses to overwrite an existing candidate manifest.
+- Restricted signed candidate creation to `main`, rejects non-HTTPS or credential-bearing installer URLs before checkout/build, and serializes candidate runs so signing jobs cannot overlap.
 - The candidate workflow does not create a GitHub Release, publish a feed or enable automatic installation. Its installer remains unsigned at the OS level until Phase 2b credentials exist.
 
 ### Remaining gates
 
 - Phase 2b requires Windows/macOS signing identities and CI secrets; automatic installation stays disabled until that work is complete.
-- Evidence collection and thresholds must be implemented before Composition is opened.
+- Composition remains closed until the already-implemented local evidence gate reaches its pre-declared thresholds; infrastructure alone does not open the feature.
 - ProcessingQueue requires a real Composition workflow; Visual Editor requires the previously agreed usage thresholds. These conditional STOP gates remain active.
 
 ### Small delivery task - Create and push the GitHub repository
