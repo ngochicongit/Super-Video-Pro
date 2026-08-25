@@ -385,3 +385,16 @@ Status: DONE
 - Verification: 26 test files and 96 tests passed with typecheck and production build. Real FFmpeg fixtures cover successful mux/finalization, duration mismatch, evidence opt-out and interrupted-job recovery; corrupt composition rows are quarantined; production audit found no known vulnerabilities.
 - Visual smoke: PASS at 1180x760; the v1.3.0 Composition form, file controls, disabled initial export action and evidence privacy controls rendered without layout breakage.
 - Release gate: PASS; `pnpm package` reran all 95 tests, typecheck and production build before producing `release/Super Video Pro Setup 1.3.0.exe` (271,401,850 bytes, SHA-256 `BB3B6E34065AB24B7CD8F66D90504FEAEE7E84F3A7999C15633E9CD5B868180E`). Windows reports the installer as `NotSigned`; no platform-signing configuration, workflow, credential or project-owned documentation remains.
+
+## V1.3.1 - Tabbed workspace UI
+
+Status: DONE
+
+- Replaced the mixed single-page workspace with five explicit tabs: Download, Composition, Tasks, History and Settings. No inactive Visual Editor tab is advertised.
+- Download now contains only URL history, single/batch input, inspection, quality selection and destination summary. All persistent configuration moved out of the completed download workflow.
+- Composition now contains only the local video/audio builder. Its processing jobs appear under Tasks while terminal results appear under History.
+- Tasks separates active Download jobs from active Composition jobs. History separates terminal Download jobs from terminal Composition jobs and retains the existing search, filter, reveal, retry and cleanup actions.
+- Settings owns download folder, concurrency, cookie source, retention, remembered UI state, runtime tool status, update check, diagnostics export and local evidence privacy/export controls.
+- Navigation regression coverage locks the five approved tabs and prevents settings, tools or Composition controls from drifting back into Download. Filters expose only active statuses under Tasks and only terminal statuses under History.
+- Verification: 27 test files and 99 tests passed with typecheck and production build. Visual smoke passed for all five tabs at 1180x760, including selected-tab repaint and responsive two-column Settings layout.
+- Release gate: PASS; the verify-first package command produced `Super Video Pro Setup 1.3.0.exe` (271,403,195 bytes, SHA-256 `450A8BE33014130954276FA740BFBB72DE7EB33DE159E6D8170BDF9F6157BD2B`) and bounded cleanup removed all tab-smoke screenshots and profiles.
