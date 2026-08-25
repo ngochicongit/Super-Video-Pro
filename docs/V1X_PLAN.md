@@ -410,3 +410,12 @@ Status: DONE
 - Verification: 27 test files and 101 tests passed with typecheck and production build. Database tests cover terminal-only retention, manager tests protect active work and exported media, and IPC remains strict and allowlisted.
 - Functional retest: direct UI download produced a 788,493-byte MP4 with no `.part`; real-network smoke passed direct MP4 and HLS extraction; production dependency audit reported no known vulnerabilities.
 - Visual smoke: PASS at 1180x760. The History tab renders separate Download and Composition search/filter controls without overlap or truncation, and update-check failure no longer suppresses its JSON/PNG evidence.
+
+## Stable feature certification policy
+
+Status: ACTIVE
+
+- `pnpm stability:check` compares source-and-test fingerprints for six completed feature groups: download/resume, extraction/X, IPC/storage/settings/diagnostics, Composition, tabbed UI/localization and safe update checking.
+- A group reported `STABLE` does not need repeated manual, real-site or visual certification in the next task. A group reported `RETEST` must receive targeted testing before its baseline can be certified again.
+- `pnpm verify` remains mandatory before delivery even when every group is stable; this marker avoids redundant expensive/manual testing, not automated regression protection.
+- Baseline certification is allowed only after the full local gate, applicable real-network/UI smoke, visual inspection and production audit pass. Test artifacts are cleaned after certification.

@@ -19,6 +19,8 @@
     "task:cleanup": "node scripts/cleanup-task-artifacts.mjs",
     "verify": "pnpm typecheck && pnpm test && pnpm build",
     "metrics": "node scripts/codebase-metrics.mjs",
+    "stability:check": "node scripts/stability-baseline.mjs",
+    "stability:certify": "node scripts/stability-baseline.mjs --certify",
     "release:keygen": "node scripts/generate-update-keypair.mjs",
     "release:manifest": "node scripts/create-update-manifest.mjs"
   },
