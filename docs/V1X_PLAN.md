@@ -281,7 +281,7 @@ Deferred by evidence, not incomplete implementation:
 
 ## V1.2.9 - Delivery foundation and signed-update infrastructure
 
-Status: IN PROGRESS - PHASES 2A AND 2A.1 DONE; PHASE 2B REMOVED; MANIFEST KEY ACTIVATION PENDING
+Status: IN PROGRESS - PHASES 2A AND 2A.1 DONE; PHASE 2B REMOVED; SIGNED CANDIDATE RUN PENDING
 
 ### Phase 1 - Git and CI gate
 
@@ -328,7 +328,8 @@ Status: DONE - MERGED TO MAIN IN PR #3
 - Phase 2b OS code signing was REMOVED by explicit product decision: this is a personal-use application, so no Authenticode PFX, certificate password, signing environment or certificate purchase is required.
 - Ed25519 manifest signing remains in scope because it is free, self-managed and verifies update metadata without claiming a Windows publisher identity. Only `SVP_UPDATE_ED25519_PRIVATE_KEY_PEM` is needed to create a manifest-signed candidate.
 - Added `pnpm release:keygen -- <output-directory>` to generate an Ed25519 pair safely outside the repository. It refuses repository paths and existing keys, writes the private key with restrictive permissions where supported, proves the pair cryptographically in tests, and never prints private-key contents.
-- Activation remains pending until the user selects a private backup location and explicitly authorizes creation/upload of the GitHub manifest secret. No key is generated implicitly by build, test or CI.
+- Production key creation remains an explicit operator action; build, test and CI never generate or rotate signing keys implicitly.
+- Production Ed25519 activation: the private key was generated outside the workspace under the user Documents backup directory and uploaded as repository secret `SVP_UPDATE_ED25519_PRIVATE_KEY_PEM` without logging its contents. The matching public key is safe to distribute, is bundled in the application, and is pinned by SHA-256 fingerprint `5972a897b00c66f2a2fbc5d573b0db650315937540e8ac6e4351dd7c0864ea21` in regression coverage.
 - macOS signing/notarization remains out of scope because the repository currently has no macOS packaging target.
 - Composition remains closed until the already-implemented local evidence gate reaches its pre-declared thresholds; infrastructure alone does not open the feature.
 - ProcessingQueue requires a real Composition workflow; Visual Editor requires the previously agreed usage thresholds. These conditional STOP gates remain active.

@@ -48,7 +48,7 @@
     "appId": "com.supervideopro.app",
     "productName": "Super Video Pro",
     "directories": { "output": "release" },
-    "files": ["dist/**/*", "dist-electron/**/*", "assets/icon.png", "package.json"],
+    "files": ["dist/**/*", "dist-electron/**/*", "assets/icon.png", "assets/update-public.pem", "package.json"],
     "extraResources": [{"from":"vendor/tools","to":"tools","filter":["**/*"]}],
     "asar": true,
     "win": { "target": "nsis", "icon": "assets/icon.ico" },
