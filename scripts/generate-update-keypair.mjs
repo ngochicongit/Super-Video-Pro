@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const outputArgument = process.argv[2];
+const outputArgument = process.argv.slice(2).find(argument => argument !== "--");
 if (!outputArgument) throw new Error("Usage: pnpm release:keygen -- <output-directory-outside-repository>");
 
 const workspace = path.resolve(".");
