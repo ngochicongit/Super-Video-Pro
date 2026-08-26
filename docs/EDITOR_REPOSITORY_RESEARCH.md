@@ -69,3 +69,12 @@ Use OpenScene as the closest architectural reference and Elah for deterministic 
 - Backend workers may use Node.js, Rust, Python or C++ when profiling shows a concrete benefit.
 - Every non-Node worker must be an isolated process behind validated IPC, bounded input/output, cancellation, timeouts and deterministic tests.
 - External repositories are reviewed statically. They are not cloned wholesale, executed, or imported without a separate license and dependency review.
+
+## Timeline component decision (2026-08-27)
+
+- [`@xzdarcy/react-timeline-editor`](https://github.com/xzdarcy/react-timeline-editor) is the preferred incremental replacement for the hand-built interaction layer. It is MIT licensed, React-native, and already supplies action drag/resize, timeline scale and controlled data. Our FFmpeg/project model can remain unchanged behind an adapter.
+- [`AiCut`](https://github.com/ipmotionmc/AiCut) has an attractive MIT React editor and canvas timeline, but its published roadmap still lists speed adjustment and waveform thumbnails as incomplete. It is useful for UX study, not a safe drop-in dependency for the current release.
+- [`Frontstage`](https://github.com/x777/frontstage) demonstrates a strong Electron/React professional timeline, but it is GPL-3.0 and cannot be copied into this project without accepting GPL obligations.
+- OpenShot remains a UX reference for dedicated zoom/pan controls, snapping and distinct drag handles. Its Qt timeline cannot be embedded directly into the Electron/React renderer.
+
+The current patch fixes the release-blocking interactions without adding a dependency. A later migration can replace only the timeline view with `@xzdarcy/react-timeline-editor`, using a two-way adapter to the existing clip, logo, lock/mute, undo and FFmpeg contracts; this avoids rewriting the rest of the editor.

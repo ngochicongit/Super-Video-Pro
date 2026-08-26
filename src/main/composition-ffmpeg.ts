@@ -7,8 +7,8 @@ export function logoOverlayFilter(logos:LogoOverlay[],videoLabel="vbase",startIn
     const input=startIndex+index;const source=index?`logoout${index-1}`:videoLabel;const color=(logo.backgroundColor??"#000000").replace("#","0x");
     const chain=[`scale='min(${logo.width},iw)':-1`,logo.hue?`hue=h=${logo.hue}`:"null","format=rgba",logo.padding?`pad=iw+${logo.padding*2}:ih+${logo.padding*2}:${logo.padding}:${logo.padding}:color=${color}@${logo.backgroundOpacity??0}`:"null",`colorchannelmixer=aa=${logo.opacity}`,logo.staticEffect==="fade-in"?`fade=t=in:st=0:d=${logo.fadeDuration??1}:alpha=1`:"null"].join(",");
     const [vertical,horizontal]=logo.position.split("-").length===2?logo.position.split("-"):[logo.position,logo.position];
-    const fixedX=logo.xPercent===undefined?(horizontal==="left"?"24":horizontal==="right"?"W-w-24":"(W-w)/2"):`(W-w)*${logo.xPercent}/100`;
-    const fixedY=logo.yPercent===undefined?(vertical==="top"?"24":vertical==="bottom"?"H-h-24":"(H-h)/2"):`(H-h)*${logo.yPercent}/100`;
+    const fixedX=logo.xPercent===undefined?(horizontal==="left"?"24":horizontal==="right"?"W-w-24":"(W-w)/2"):`max(0,min(W-w,W*${logo.xPercent}/100-w/2))`;
+    const fixedY=logo.yPercent===undefined?(vertical==="top"?"24":vertical==="bottom"?"H-h-24":"(H-h)/2"):`max(0,min(H-h,H*${logo.yPercent}/100-h/2))`;
     const movingX=logo.mode==="bounce"||logo.mode==="horizontal";const movingY=logo.mode==="bounce"||logo.mode==="vertical";
     const x=movingX?bounce("x",logo.speedX):fixedX;const y=movingY?bounce("y",logo.speedY):fixedY;
     const timing=logo.timelineEnd===undefined&&!(logo.timelineStart??0)?"":`:enable='between(t,${logo.timelineStart??0},${logo.timelineEnd??86400})'`;
