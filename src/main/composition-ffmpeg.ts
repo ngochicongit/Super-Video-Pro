@@ -1,5 +1,5 @@
 export type VideoEdit={path:string;trimStart:number;trimEnd?:number;speed:number};
-export type CompositionArgsInput={videoPaths:string[];videoEdits?:VideoEdit[];audioPath:string;audioVolume?:number;logos?:LogoOverlay[];logoPath?:string;tempPath:string;width:number;height:number};
+export type CompositionArgsInput={videoPaths:string[];videoEdits?:VideoEdit[];audioPath?:string;audioVolume?:number;logos?:LogoOverlay[];logoPath?:string;tempPath:string;width:number;height:number};
 export type LogoOverlay={path:string;mode:"static"|"bounce"|"horizontal"|"vertical";position:string;xPercent?:number;yPercent?:number;width:number;opacity:number;speedX:number;speedY:number;hue?:number;backgroundColor?:string;backgroundOpacity?:number;padding?:number;borderWidth?:number;borderColor?:string;staticEffect?:"none"|"fade-in";fadeDuration?:number;timelineStart?:number;timelineEnd?:number};
 function bounce(axis:"x"|"y",speed:number){const outer=axis==="x"?"W-w":"H-h";return `if(lt(mod(t*${speed},2*(${outer})),${outer}),mod(t*${speed},2*(${outer})),2*(${outer})-mod(t*${speed},2*(${outer})))`;}
 export function logoOverlayFilter(logos:LogoOverlay[],videoLabel="vbase",startIndex=0){
@@ -21,11 +21,11 @@ export function compositionArgs(input:CompositionArgsInput){
   const {videoPaths,audioPath,tempPath,width,height}=input; const logos=input.logos??(input.logoPath?[{path:input.logoPath,mode:"static",position:"bottom-right",width:220,opacity:1,speedX:120,speedY:90}]:[]);const edits:VideoEdit[]=input.videoEdits??videoPaths.map(path=>({path,trimStart:0,speed:1}));const edited=edits.some(item=>item.trimStart||item.trimEnd!==undefined||item.speed!==1);const audioArgs=input.audioVolume===undefined||input.audioVolume===1?[]:["-af",`volume=${input.audioVolume}`];
   const videoInputs=videoPaths.flatMap(file=>["-i",file]);
   const audioIndex=videoPaths.length;
-  const logoIndex=audioIndex+1;
-  if(videoPaths.length===1&&!logos.length&&!edited)return["-y",...videoInputs,"-i",audioPath,"-map","0:v:0","-map",`${audioIndex}:a:0`,"-c:v","copy","-c:a","aac",...audioArgs,"-shortest","-f","mp4",tempPath];
-  const inputs=[...videoInputs,"-i",audioPath,...logos.flatMap(logo=>["-i",logo.path])];
+  const logoIndex=audioIndex+(audioPath?1:0);
+  if(videoPaths.length===1&&!logos.length&&!edited)return["-y",...videoInputs,...(audioPath?["-i",audioPath,"-map","0:v:0","-map",`${audioIndex}:a:0`,"-c:v","copy","-c:a","aac",...audioArgs,"-shortest"]:["-map","0:v:0","-c:v","copy","-an"]),"-f","mp4",tempPath];
+  const inputs=[...videoInputs,...(audioPath?["-i",audioPath]:[]),...logos.flatMap(logo=>["-i",logo.path])];
   const normalized=videoPaths.map((_,index)=>{const edit:VideoEdit=edits[index]??{path:videoPaths[index]!,trimStart:0,speed:1};const trim=`trim=start=${edit.trimStart}${edit.trimEnd===undefined?"":`:end=${edit.trimEnd}`},setpts=(PTS-STARTPTS)/${edit.speed}`;return `[${index}:v:0]${trim},scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1[v${index}]`;}).join(";");
   const concat=videoPaths.length===1?"[v0]null[vbase]":`${videoPaths.map((_,index)=>`[v${index}]`).join("")}concat=n=${videoPaths.length}:v=1:a=0[vbase]`;
   const filter=`${normalized};${concat}${logos.length?`;${logoOverlayFilter(logos,"vbase",logoIndex)}`:""}`;
-  return["-y",...inputs,"-filter_complex",filter,"-map",logos.length?`[logoout${logos.length-1}]`:"[vbase]","-map",`${audioIndex}:a:0`,"-c:v","libx264","-pix_fmt","yuv420p","-c:a","aac",...audioArgs,"-shortest","-f","mp4",tempPath];
+  return["-y",...inputs,"-filter_complex",filter,"-map",logos.length?`[logoout${logos.length-1}]`:"[vbase]",...(audioPath?["-map",`${audioIndex}:a:0`,"-c:a","aac",...audioArgs,"-shortest"]:["-an"]),"-c:v","libx264","-pix_fmt","yuv420p","-f","mp4",tempPath];
 }
