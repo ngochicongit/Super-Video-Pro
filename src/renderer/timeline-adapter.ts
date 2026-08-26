@@ -1,6 +1,6 @@
 // AiCut-inspired boundary: one canonical timebase and one transaction per pointer gesture.
 // This is an original adapter for Super Video Pro; no AiCut source file is vendored.
-export type TimelineClip={id:string;trimStart:number;trimEnd:number;speed:number};
+export type TimelineClip={id:string;trimStart:number;trimEnd:number;speed:number;duration?:number};
 export type TimelineLogo={id:string;timelineStart:number;timelineEnd?:number};
 export type TimelineActionShape={id:string;start:number;end:number;effectId:string;selected?:boolean;flexible?:boolean;movable?:boolean};
 export type TimelineRowShape={id:string;actions:TimelineActionShape[];rowHeight?:number;classNames?:string[]};
@@ -21,3 +21,12 @@ export function reorderByTimelineStart<T extends {id:string}>(items:T[],id:strin
 }
 
 export const frameSnap=(seconds:number,fps=30)=>Math.round(seconds*fps)/fps;
+
+export function resizeSourceClip<T extends TimelineClip>(clip:T,actionStart:number,actionEnd:number,nextStart:number,nextEnd:number,dir:"left"|"right"):T{
+  if(dir==="left"){const trimStart=Math.max(0,Math.min(clip.trimEnd-1/30,clip.trimStart+(nextStart-actionStart)*clip.speed));return{...clip,trimStart};}
+  const trimEnd=Math.min(clip.duration??Number.POSITIVE_INFINITY,Math.max(clip.trimStart+1/30,clip.trimEnd+(nextEnd-actionEnd)*clip.speed));return{...clip,trimEnd};
+}
+
+export function boundedOverlayCenter(clientX:number,clientY:number,frame:{left:number;top:number;width:number;height:number},image:{width:number;height:number}){const halfX=Math.min(50,image.width/frame.width*50),halfY=Math.min(50,image.height/frame.height*50);return{x:Math.max(halfX,Math.min(100-halfX,(clientX-frame.left)/frame.width*100)),y:Math.max(halfY,Math.min(100-halfY,(clientY-frame.top)/frame.height*100))};}
+
+export function previewAnimationDuration(bounds:{width:number;height:number},logoWidthPercent:number,mode:"static"|"bounce"|"horizontal"|"vertical",speedX:number,speedY:number){const width=Math.max(1,bounds.width*(1-logoWidthPercent/100)),height=Math.max(1,bounds.height*.55);if(mode==="horizontal")return Math.max(.25,width/Math.max(1,speedX)*2);if(mode==="vertical")return Math.max(.25,height/Math.max(1,speedY)*2);return Math.max(.25,Math.max(width/Math.max(1,speedX),height/Math.max(1,speedY))*2);}

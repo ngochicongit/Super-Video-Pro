@@ -12,4 +12,4 @@
 - [x] No unresolved Critical/P0 blocker remains.
 - [x] Release notes, known issues and rollback owner are recorded.
 
-Latest gate closure: V1.9.0 local release candidate on 2026-08-27. Verification and installer evidence are recorded in `docs/RELEASE_NOTES_V1.9.0.md`; no external publication is claimed.
+Latest gate closure: V1.9.1 local release candidate on 2026-08-27. Verification and installer evidence are recorded in `docs/RELEASE_NOTES_V1.9.1.md`; no external publication is claimed.
