@@ -1,6 +1,6 @@
 {
   "name": "super-video-pro",
-  "version": "1.9.4",
+  "version": "1.10.0",
   "packageManager": "pnpm@11.19.0",
   "private": true,
   "description": "Local-first desktop video download manager",
@@ -21,6 +21,9 @@
     "metrics": "node scripts/codebase-metrics.mjs",
     "stability:check": "node scripts/stability-baseline.mjs",
     "stability:certify": "node scripts/stability-baseline.mjs --certify",
+    "ui:init": "node scripts/ui-refactor.mjs init",
+    "ui:audit": "node scripts/ui-refactor.mjs audit",
+    "ui:verify": "node scripts/ui-refactor.mjs verify",
     "release:keygen": "node scripts/generate-update-keypair.mjs",
     "release:manifest": "node scripts/create-update-manifest.mjs"
   },

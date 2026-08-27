@@ -14,3 +14,5 @@ vendor/*.zip
 .env.*
 !.env.example
 .codex_spreadsheet_work/
+.ui-refactor/runs/
+.ui-refactor/latest.json

@@ -1,0 +1,10 @@
+{
+  "targetScore": 90,
+  "tabs": ["download", "composition"],
+  "viewports": [
+    {"name": "compact", "width": 900, "height": 700},
+    {"name": "desktop", "width": 1180, "height": 760},
+    {"name": "wide", "width": 1440, "height": 900}
+  ],
+  "gates": {"maxUnlabeledControls": 1, "maxHorizontalOverflow": 5, "maxRendererErrors": 0}
+}
