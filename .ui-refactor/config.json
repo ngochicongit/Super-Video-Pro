@@ -1,6 +1,6 @@
 {
   "targetScore": 90,
-  "tabs": ["download", "composition"],
+  "tabs": ["download", "composition", "tasks", "history", "settings"],
   "viewports": [
     {"name": "compact", "width": 900, "height": 700},
     {"name": "desktop", "width": 1180, "height": 760},
