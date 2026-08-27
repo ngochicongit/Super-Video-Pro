@@ -1,2 +1,2 @@
 import {t} from "./i18n";
-export function AppHeader(){return <header className="hero"><div><span className="eyebrow">{t("tagline")}</span><h1>Super Video <b>Pro</b></h1></div></header>}
+export function AppHeader({activeTasks,onTasks,onSettings}:{activeTasks:number;onTasks:()=>void;onSettings:()=>void}){return <header className="hero"><div><span className="eyebrow">{t("tagline")}</span><h1>Super Video <b>Pro</b></h1></div><div className="shell-actions"><button data-surface="tasks" onClick={onTasks}><span>◉</span>Tác vụ{activeTasks>0&&<b>{activeTasks}</b>}</button><button data-surface="settings" aria-label="Mở cài đặt" title="Cài đặt" onClick={onSettings}>⚙</button></div></header>}
