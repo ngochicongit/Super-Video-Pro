@@ -42,3 +42,5 @@ Phase 12: validation/render inspection concepts from Videogen and html-video inf
 Phase 13: html-video `runtime` and `content-graph` inform `discover_agents`, controlled storyboard editing, and deterministic project tool boundaries.
 
 Phase 14: html-video Studio iteration workflow informs `BoundedAutonomousEditor` and its per-scene edit history.
+
+Phase 17: ComfyUI provider/workflow boundary remains the integration point; advanced Wan/LTX/AnimateDiff capabilities are optional disabled-by-default descriptors.

@@ -86,3 +86,5 @@ Phase 12: upstream validation and render-check utilities were inspected; QA is i
 Phase 13: html-video runtime agent discovery, PATH probing, content-graph stable IDs, and Studio frame-edit boundaries were inspected and adapted behind `agent_tools.py`; process execution remains explicit and no shell command is accepted from agent input.
 
 Phase 14: html-video Studio iteration and render loop were reviewed; bounded inspect/edit/validate/preview/QA sequencing is adapted in `autonomous_editor.py` with a hard three-revision limit.
+
+Phase 17: existing ComfyUI image provider and workflows were inspected. Wan, LTX, and AnimateDiff remain capability flags only because no stable, licensed, repository-local video workflow was available; the core pipeline is unchanged and independent.
