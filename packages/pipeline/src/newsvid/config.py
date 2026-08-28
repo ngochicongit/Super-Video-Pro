@@ -29,6 +29,9 @@ class ServiceConfig(BaseModel):
     subtitle_top_safe_px: int = Field(default=180, ge=0)
     subtitle_bottom_safe_px: int = Field(default=300, ge=0)
     subtitle_max_words_per_line: int = Field(default=7, ge=1, le=12)
+    ffmpeg_executable: str = "ffmpeg"
+    ffprobe_executable: str = "ffprobe"
+    image_max_bytes: int = Field(default=20 * 1024 * 1024, ge=1024)
 
 
 class AppConfig(BaseModel):

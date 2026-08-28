@@ -56,3 +56,11 @@ Every scene retains its script segment ID, narration, duration and exact `fact_r
 `AlignmentCoordinator` derives scene offsets from the validated TTS manifest, fingerprints storyboard/audio/provider/layout inputs, and updates the existing ALIGNMENT checkpoint. A matching complete checkpoint safely reuses `words.json`, ASS and its layout report.
 
 The ASS generator adapts Videogen's punctuation grouping, timestamp formatting and word-level `\k` karaoke model. It adds Vietnamese-safe UTF-8 output, ASS escaping, approximately seven words per caption group, up to two display lines, adaptive font sizing, default 180 px top and 300 px bottom safe areas, and explicit overflow rejection. Phase 6 produces no video frames and does not burn subtitles into video.
+
+## Phase 7 article-asset video
+
+`ArticleImageCache` acquires only public HTTP(S) images already attributed in `images.json`. Downloads enforce supported image MIME types and a configured byte ceiling, use atomic replacement, persist source URL/content type/SHA-256, and reuse only intact cached files.
+
+`FFmpegArticleRenderer` adapts Videogen's basic CPU path: aspect-fill scale and center crop, deterministic `zoompan` presets, per-scene H.264/yuv420p video plus AAC narration, concat demuxing, and libass subtitle burn. Commands use argument arrays with `shell=False`; ComfyUI is not imported or contacted.
+
+`ArticleVideoCoordinator` reads `storyboard.json` as the editing source of truth and validates the existing image, TTS and ASS artifacts. It records VISUALS and SCENES checkpoints, concatenates and probes `output/article-video.preview.mp4`, completes PREVIEW only after resolution/audio validation, then burns captions and probes the final vertical MP4. Unchanged complete inputs reuse the final manifest; unchanged scene fingerprints reuse existing scene MP4s.

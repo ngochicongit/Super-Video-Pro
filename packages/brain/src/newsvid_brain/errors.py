@@ -20,3 +20,7 @@ class TTSError(RuntimeError):
 
 class AlignmentError(RuntimeError):
     """Word alignment or subtitle generation failed safely."""
+
+
+class RenderError(RuntimeError):
+    """Article-asset scene or final video rendering failed."""

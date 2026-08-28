@@ -60,6 +60,7 @@ def collect_status(config: AppConfig) -> list[DependencyStatus]:
         DependencyStatus("Python", "OK" if sys.version_info >= (3, 11) else "ERROR", sys.version.split()[0], True),
         _command("node", ["--version"], True),
         _command("ffmpeg", ["-version"], True),
+        _command("ffprobe", ["-version"], True),
         _command("ollama", ["--version"]),
         DependencyStatus("Qwen", "CONFIGURED", config.services.ollama_model),
         _playwright(),

@@ -21,3 +21,6 @@ services:
   subtitle_top_safe_px: 180
   subtitle_bottom_safe_px: 300
   subtitle_max_words_per_line: 7
+  ffmpeg_executable: ffmpeg
+  ffprobe_executable: ffprobe
+  image_max_bytes: 20971520

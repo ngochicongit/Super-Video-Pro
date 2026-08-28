@@ -15,8 +15,9 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Vietnamese pronunciation / audio cache | Auto-Create-Video narration/voice config and file reuse; no complete upstream normalizer | `normalize_vi`, external pronunciation YAML, `TTSManifest` | 5 |
 | STT/alignment | Videogen `clients/stt.py`, `pipeline/orchestrator.py` stage 5, `types.py` | `AlignmentProvider`, loopback `WhisperXProvider`, `AlignmentCoordinator`, `WordsDocument` | 6 |
 | Subtitles | Videogen `generators/subtitles.py`, `tests/test_subtitles.py`, `processors/subtitle_qa.py` | `generate_ass`, `SubtitleLayout`, safe-area/overflow report | 6 |
-| FFmpeg | Videogen `assembler/*`; newsvid `vid.py`; current `src/main/tools.ts` and `composition-ffmpeg.ts` | Future centralized Python executor, existing Electron executor remains | 7/10 |
-| Ken Burns | Videogen `assembler/ken_burns.py`; Auto-Create-Video `html-composer.ts` | Future static visual renderer | 7 |
+| Article image acquisition/cache | Videogen `clients/image_search.py`, `tests/test_image_search.py` | `ArticleImageCache`, `ImageAsset` | 7 |
+| FFmpeg scene/final composition | Videogen `assembler/compositor.py`, `encoder.py`; current Electron FFmpeg execution conventions | `FFmpegArticleRenderer`, `ArticleVideoCoordinator` | 7 basic / 10 advanced |
+| Ken Burns | Videogen `assembler/ken_burns.py`, tests; Auto-Create-Video `html-composer.ts` | FFmpeg crop/scale/zoompan presets | 7 |
 | HyperFrames/GSAP | Auto-Create-Video `hyperframes-runner.ts`, `templates/animations.js`; html-video `adapter-hyperframes` | Future `HTMLRenderer` adapter | 8 |
 | Chromium renderer | html-video engine adapters/CLI export path | Future scene renderer | 8 |
 | ComfyUI | Videogen `clients/comfyui.py`, `docs/workflows/*` | Future `ComfyUIProvider` | 9 |
@@ -30,4 +31,4 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Metadata/images | OpenGraph/JSON-LD and DOM patterns inspected across the three sources; no complete implementation | `Source`, `ArticleImage`, `ImageManifest` | 1 |
 | Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
-Phases 0–6 intentionally create no complete video renderer, visual asset generator, template runtime, agent or Studio module. WhisperX and F5-TTS remain optional adapters to isolated loopback services.
+Phase 7 adds only the basic article-image FFmpeg renderer. It intentionally creates no ComfyUI visual generation, motion-graphics/Chromium template runtime, advanced transitions, agent or Studio module. WhisperX and F5-TTS remain optional adapters to isolated loopback services.

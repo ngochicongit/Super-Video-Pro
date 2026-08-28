@@ -1,4 +1,4 @@
-# Upstream reuse audit — Phases 0–6
+# Upstream reuse audit — Phases 0–7
 
 Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and are read-only references. Runtime code does not import from them.
 
@@ -28,7 +28,8 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 | WAV validation / atomic audio | Videogen / Auto-Create-Video | direct response/file writes | Mixed | EXTEND | `tts_providers.py`, `tts.py` | Adds standard-library WAV validation, atomic replacement, audio hashing and corruption-triggered regeneration before cache acceptance. |
 | STT/alignment | Videogen | `clients/stt.py`, orchestrator stage 5, `types.py` (`WordTimestamp`) | No license | ADAPT (behavior), no source copied | `AlignmentProvider`, `WhisperXProvider`, `AlignmentCoordinator`, `words.json` | Aggressively adapted the OpenAI-style multipart request, Vietnamese language selection, word timestamps and per-scene offset flow behind a strict local WhisperX boundary. |
 | Subtitles | Videogen | `generators/subtitles.py`, `tests/test_subtitles.py`, `processors/subtitle_qa.py` | No license | ADAPT (behavior), no source copied | `subtitles.py`, `SubtitleLayout`, `subtitle_report.json` | Adapted ASS timing, punctuation grouping, scene offsets and `\k` karaoke behavior; extended with adaptive sizing, safe areas, Vietnamese preservation and overflow rejection. |
-| FFmpeg / Ken Burns / transitions | Videogen | `assembler/encoder.py`, `compositor.py`, `ken_burns.py`, `transitions.py` | No license | REFERENCE_ONLY | Phases 7/10 | Current Electron app already centralizes tool execution; no premature Python renderer. |
+| Article image download/cache | Videogen | `clients/image_search.py`, `tests/test_image_search.py` | No license | ADAPT (behavior), no source copied | `ArticleImageCache` | Adapted download-to-project behavior; extended with URL validation, MIME/size bounds, SHA-256 cache, atomic writes and corruption checks. |
+| FFmpeg / Ken Burns / scene composition | Videogen | `assembler/ken_burns.py`, `compositor.py`, `encoder.py`; corresponding tests | No license | ADAPT (behavior), no source copied | `FFmpegArticleRenderer`, `ArticleVideoCoordinator` | Adapted crop/scale/zoompan, audio composition, concat and ASS burn sequence to storyboard-driven 9:16 output with preview/checkpoints and no ComfyUI. Transitions remain Phase 10. |
 | ComfyUI | Videogen | `clients/comfyui.py` | No license | REFERENCE_ONLY | Phase 9 | Workflow/API lifecycle mapped; no adapter created. |
 | HyperFrames / GSAP / motion templates | Auto-Create-Video | `render/hyperframes-runner.ts`, `html-composer.ts`, `templates/*` | MIT | REFERENCE_ONLY | Phase 8 | Suitable implementation exists, but integrating it now would violate Phase 0 and no-placeholder rules. |
 | Chromium renderer / templates | html-video | `packages/adapter-hyperframes`, `packages/adapter-remotion`, `templates/*` | Apache-2.0 plus template attributions | REFERENCE_ONLY | Phase 8 | Engine and provenance interfaces mapped for later inspection. |
@@ -61,5 +62,7 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 - Phase 5 normalization/cache: no upstream combines external Vietnamese pronunciation rules with content/config fingerprints and validated WAV hashes.
 - Phase 6 alignment persistence: upstream stores words inside mutable scene/checkpoint objects; the required strict, cache-fingerprinted standalone `words.json` and failure-safe coordinator were absent.
 - Phase 6 layout validation: upstream uses a fixed font/margin and four-word chunks, with no top/bottom safe-area calculation, adaptive size, two-line limit or overflow rejection.
+- Phase 7 asset safety/cache: upstream writes response bytes directly and overwrites portrait images; required bounded atomic acquisition, provenance manifest and content-integrity cache were absent.
+- Phase 7 renderer orchestration: upstream scene flags do not match the project-wide VISUALS/SCENES/PREVIEW/FINAL_RENDER checkpoints or `storyboard.json` source-of-truth requirement.
 
-No upstream tests were copied verbatim. Phase 6 ports the observable assertions from Videogen's subtitle tests—ASS timestamps, offsets, karaoke tags, punctuation grouping and monotonic scene merging—into independently written tests for the new schemas and Vietnamese pipeline.
+No upstream tests were copied verbatim. Phase 7 independently ports observable assertions for portrait crop/resize, zoompan presets, H.264/yuv420p scene video, AAC/shortest audio composition, concat cleanup and ASS subtitle burning. An additional real FFmpeg acceptance test proves the complete output.

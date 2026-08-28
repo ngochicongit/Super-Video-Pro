@@ -1,6 +1,6 @@
 # Third-party notices — AI News Video
 
-Phases 0–6 were reviewed against these read-only upstream snapshots. The application has no runtime dependency on `.upstream/`.
+Phases 0–7 were reviewed against these read-only upstream snapshots. The application has no runtime dependency on `.upstream/`.
 
 ## Auto-Create-Video
 
@@ -23,7 +23,7 @@ Phases 0–6 were reviewed against these read-only upstream snapshots. The appli
 - Repository: https://github.com/Juwebien/videogen
 - Commit reviewed: `6134ccdb05a19b8c88bc6609eafe47aefee7adca`
 - License: no license file was present in the reviewed snapshot.
-- Phase 0–6 use: `REFERENCE_ONLY` at the source-license level. Phase 6 independently adapts observable STT multipart, word-timestamp, ASS karaoke, grouping and offset behavior because no license grant permits copying source. No source or assets were copied.
+- Phase 0–7 use: `REFERENCE_ONLY` at the source-license level. Phase 7 independently adapts observable image crop, Ken Burns, audio composition, concat and ASS-burn behavior because no license grant permits copying source. No source or assets were copied.
 
 ## newsvid
 
@@ -43,6 +43,8 @@ Phase 4 adds no third-party dependency or copied template asset. Existing html-v
 Phase 5 adds no Python dependency or copied voice/model. Piper and F5-TTS are optional external local runtimes whose models and licenses must be supplied separately by the operator.
 
 Phase 6 adds no Python dependency or copied model/font. WhisperX is an optional isolated local runtime whose package, model and licenses must be supplied separately by the operator. ASS generation is implemented locally; no Videogen source was copied.
+
+Phase 7 adds no Python dependency or copied image/media asset. It invokes the operator-installed FFmpeg/FFprobe already required by the application. Article images retain their source URLs in project provenance and remain subject to their publishers' rights and terms.
 
 ## Phase 1 Python dependencies
 

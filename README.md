@@ -37,9 +37,9 @@ pnpm package
 
 The NSIS installer is emitted under `release/`.
 
-## AI News Video — Phases 0–6
+## AI News Video — Phases 0–7
 
-The Python foundation is isolated from the Electron renderer and exposes project/checkpoint management, article ingestion, grounded facts, Vietnamese scripts, an editable visual storyboard, cached Vietnamese WAV narration, word alignment and karaoke ASS subtitles. It intentionally does not render the complete video yet.
+The Python foundation is isolated from the Electron renderer and now supports the first complete basic article-to-video path: ingestion, grounded script/storyboard, Vietnamese WAV narration, word alignment, karaoke ASS subtitles, cached article imagery and vertical FFmpeg output without ComfyUI.
 
 ```powershell
 python -m venv .venv
@@ -105,6 +105,14 @@ Pronunciation rules are editable in `config/pronunciation_vi.yaml`. They cover t
 ```
 
 The command sends each validated scene WAV and normalized Vietnamese narration to the configured loopback WhisperX alignment service. It writes strict project-level `words.json`, `captions/subtitles.ass`, and `captions/subtitle_report.json`. Karaoke highlights follow word timings; captions prefer at most seven words per displayed group, adapt font size, preserve a 180 px top and 300 px bottom safe area, and fail instead of emitting overflowing captions.
+
+### Article-asset video
+
+```powershell
+.\.venv\Scripts\newsvid render-article <project-id>
+```
+
+The Phase 7 renderer downloads only attributed entries from `images.json`, validates public URLs and image MIME/size, and caches bytes by URL with SHA-256 integrity. Each storyboard scene uses an article image with crop/resize plus deterministic zoom or pan, its cached narration, and FFmpeg H.264/AAC composition. It validates a subtitle-free preview before burning Phase 6 ASS into `output/article-video.mp4`. No ComfyUI service or generated imagery is required.
 
 ## Security boundary
 
