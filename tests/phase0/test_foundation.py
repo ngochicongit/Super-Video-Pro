@@ -53,6 +53,10 @@ def test_phase0_provenance_documents_exist() -> None:
         "licenses/upstream/Auto-Create-Video-MIT.txt",
         "licenses/upstream/html-video-Apache-2.0.txt",
         "licenses/upstream/UNLICENSED_REFERENCES.md",
+        "licenses/python/trafilatura-Apache-2.0.txt",
+        "licenses/python/beautifulsoup4-MIT.txt",
+        "licenses/python/httpx-BSD-3-Clause.md",
+        "licenses/python/playwright-Apache-2.0.txt",
     ]
     assert all((root / path).is_file() for path in required)
 

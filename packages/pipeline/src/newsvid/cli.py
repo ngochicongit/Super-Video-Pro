@@ -9,6 +9,8 @@ from .config import load_config
 from .doctor import collect_status
 from .project import ProjectManager
 from .schemas import PipelineStage, StageStatus
+from .ingestion import IngestionCoordinator
+from newsvid_ingest.errors import ArticleExtractionError
 
 
 def _print_model(model: object) -> None:
@@ -22,6 +24,12 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     doctor = commands.add_parser("doctor", help="Report local dependencies")
     doctor.add_argument("--strict", action="store_true", help="Fail when a required dependency is unavailable")
+    ingest = commands.add_parser("ingest", help="Extract an article into a project")
+    ingest.add_argument("source", help="Public HTTP(S) URL or local HTML fixture")
+    ingest.add_argument("--project", dest="project_id", help="Existing project id")
+    ingest.add_argument("--name", help="Name for a newly created project")
+    ingest.add_argument("--source-url", default="https://fixture.invalid/article", help="Canonical URL used with a local fixture")
+    ingest.add_argument("--no-browser-fallback", action="store_true")
     project = commands.add_parser("project", help="Manage Phase 0 projects")
     project_commands = project.add_subparsers(dest="project_command", required=True)
     create = project_commands.add_parser("create", help="Create a project")
@@ -48,6 +56,19 @@ def main(argv: list[str] | None = None) -> int:
         for item in statuses:
             print(f"{item.name:<12} {item.status:<16} {item.detail}")
         return 1 if args.strict and any(item.required and item.status != "OK" for item in statuses) else 0
+    if args.command == "ingest":
+        coordinator = IngestionCoordinator(manager)
+        try:
+            source_path = Path(args.source)
+            if source_path.is_file():
+                project = coordinator.ingest_file(source_path, source_url=args.source_url, project_id=args.project_id, name=args.name)
+            else:
+                project = coordinator.ingest_url(args.source, project_id=args.project_id, name=args.name, browser_fallback=not args.no_browser_fallback)
+        except (ArticleExtractionError, OSError, ValueError) as exc:
+            print(f"INGEST ERROR: {exc}")
+            return 2
+        _print_model(project)
+        return 0
     if args.command == "project" and args.project_command == "create":
         project = manager.create(args.name)
         _print_model(project)

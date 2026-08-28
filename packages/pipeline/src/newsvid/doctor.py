@@ -5,6 +5,7 @@ import shutil
 import socket
 import subprocess
 import sys
+from pathlib import Path
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
@@ -40,6 +41,20 @@ def _port(name: str, url: str) -> DependencyStatus:
         return DependencyStatus(name, "OPTIONAL/OFFLINE", url)
 
 
+def _playwright() -> DependencyStatus:
+    if not importlib.util.find_spec("playwright"):
+        return DependencyStatus("Playwright", "OPTIONAL/OFFLINE", "install with .[browser]")
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as runtime:
+            executable = Path(runtime.chromium.executable_path)
+        if executable.is_file():
+            return DependencyStatus("Playwright", "OK", str(executable))
+        return DependencyStatus("Playwright", "OPTIONAL/OFFLINE", "Chromium browser is not installed")
+    except Exception as exc:
+        return DependencyStatus("Playwright", "OPTIONAL/OFFLINE", str(exc))
+
+
 def collect_status(config: AppConfig) -> list[DependencyStatus]:
     checks = [
         DependencyStatus("Python", "OK" if sys.version_info >= (3, 11) else "ERROR", sys.version.split()[0], True),
@@ -47,7 +62,7 @@ def collect_status(config: AppConfig) -> list[DependencyStatus]:
         _command("ffmpeg", ["-version"], True),
         _command("ollama", ["--version"]),
         DependencyStatus("Qwen", "CONFIGURED", config.services.ollama_model),
-        DependencyStatus("Playwright", "OK" if importlib.util.find_spec("playwright") else "OPTIONAL/OFFLINE", "Python package"),
+        _playwright(),
         _port("ComfyUI", config.services.comfyui_url),
         _command("piper", ["--version"]),
         DependencyStatus("F5-TTS", "OK" if importlib.util.find_spec("f5_tts") else "OPTIONAL/OFFLINE", "Python package"),

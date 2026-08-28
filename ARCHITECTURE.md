@@ -14,3 +14,9 @@ Phase 0 boundaries:
 Later stages must plug into these boundaries. They must not duplicate pipeline logic in Electron, and `storyboard.json` becomes the editing source of truth only when Phase 4 implements it.
 
 See `docs/ARCHITECTURE.md` for the existing Electron architecture and `docs/UPSTREAM_SOURCE_MAP.md` for future adapter mapping.
+
+## Phase 1 ingestion
+
+`newsvid ingest` routes a public URL through a bounded static HTTP fetch and Trafilatura. If the result cannot produce a valid article, the optional Playwright adapter performs one guarded browser fetch and the same extractor validates its output. BeautifulSoup DOM heuristics are the final content reducer, not a separate unvalidated output path.
+
+The coordinator atomically writes `source.json`, `article.md` and `images.json`, then completes the INGEST checkpoint with a deterministic fingerprint. Scraped scripts are parsed only as inert JSON-LD metadata and never reach the Electron renderer.

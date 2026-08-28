@@ -1,4 +1,4 @@
-# Upstream reuse audit — Phase 0
+# Upstream reuse audit — Phases 0–1
 
 Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and are read-only references. Runtime code does not import from them.
 
@@ -25,11 +25,19 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 | Content graph | html-video | `packages/content-graph/src/index.ts` | Apache-2.0 | REFERENCE_ONLY | Phase 4 | Storyboard concepts must not be implemented before Phase 4. |
 | Codex / Cursor / agents | html-video | `packages/runtime/src/detect.ts`, `spawn.ts`, `defs/codex.ts`, `defs/cursor-agent.ts` | Apache-2.0 | REFERENCE_ONLY | Phase 13 | Agent detection/execution is mapped, not copied early. |
 | Studio | html-video | `packages/project-studio/public/index.html`, `packages/cli/src/studio-server.ts` | Apache-2.0 | REFERENCE_ONLY | Phase 16 | UI is explicitly out of Phase 0; the Electron tab is therefore not added yet. |
+| Public URL validation/fetch | html-video | `packages/cli/src/fetch-source.ts` | Apache-2.0 | ADAPT | `packages/article_ingest/src/newsvid_ingest/security.py`, `fetchers.py` | Adapted protocol/private-host guard, bounded redirects, timeout and browser-like user agent; extended with DNS classification, response size/type bounds and redirect revalidation. |
+| Article content extraction | Videogen | `src/videogen/processors/article_parser.py`, `tests/test_article_parser.py` | No license found | REFERENCE_ONLY | `packages/article_ingest/src/newsvid_ingest/extractor.py` | Article/main/body selection, noise removal and section tests informed behavior; no source copied because no license grant. |
+| HTML to Markdown | html-video | `packages/cli/src/fetch-source.ts` (`htmlToMarkdown`, `extractMainHtml`) | Apache-2.0 | ADAPT | `packages/article_ingest/src/newsvid_ingest/extractor.py` | Uses licensed source-handling concepts, but delegates primary extraction to Trafilatura and provides BeautifulSoup DOM heuristics instead of porting regex conversion. |
+| URL article workflow | newsvid | `newsvid` (`extract_text_from_url`, `generate`) | No license found | REFERENCE_ONLY | `packages/pipeline/src/newsvid/ingestion.py`, CLI `ingest` | Simple request→BeautifulSoup→text flow reviewed; lacks metadata/images/security/fallback and cannot be copied without a license. |
+| Metadata and image provenance | Videogen / html-video / newsvid | No complete upstream implementation found | Mixed | WRITE_NEW | `newsvid_ingest/models.py`, `extractor.py` | Required `source.json` and attributed `images.json` schemas, JSON-LD/OpenGraph resolution and relative URL handling are product-specific gaps. |
+| Browser fallback | html-video rendering stack | adapter Chromium usage; no article fallback | Apache-2.0 | EXTEND | `newsvid_ingest/fetchers.py` (`PlaywrightFetcher`) | Reuses the audited browser boundary concept, adding article navigation, network request guards and optional-browser failure reporting. |
 
 ## WRITE_NEW justification
 
 - `persistence.py`: neither licensed upstream implementation provides durable atomic JSON replacement plus Pydantic validation in the required Python/Windows architecture.
 - `checkpoint.py`: Videogen's closest implementation has no license grant and its scene-flag model does not match the required eleven pipeline stages.
 - Phase 0 tests: repository-specific acceptance tests are needed to prove path confinement, project layout, strict schemas and persisted checkpoints without external services.
+- Phase 1 metadata/image extraction: none of the inspected upstreams produces the required source and attributed image manifests.
+- Phase 1 Playwright article adapter: inspected browser code renders video or Studio previews; it does not safely fetch JS-dependent articles into the project's ingestion interface.
 
-No upstream tests were copied verbatim. Their assertions around persistence/resume informed independently written Phase 0 acceptance tests.
+No upstream tests were copied verbatim. Videogen's article parser tests informed independently written fixture, noise-removal, section and fallback assertions.

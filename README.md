@@ -51,6 +51,15 @@ python -m venv .venv
 
 The upstream audit and provenance records are in `docs/UPSTREAM_REUSE_AUDIT.md`, `docs/UPSTREAM_SOURCE_MAP.md`, and `THIRD_PARTY_NOTICES.md`.
 
+### Article ingestion
+
+```powershell
+.\.venv\Scripts\newsvid ingest "https://example.com/article"
+.\.venv\Scripts\newsvid ingest tests\fixtures\article_vi.html --source-url "https://publisher.example/article"
+```
+
+The command creates a project containing validated `source.json`, `article.md`, and `images.json`. Static extraction is the default. Install the optional JS-page fallback with `pip install -e ".[browser]"` followed by `playwright install chromium`.
+
 ## Security boundary
 
 The renderer has `nodeIntegration: false`, `contextIsolation: true`, and `sandbox: true`. It receives only the narrow API exposed by preload. Every request and response is checked against a Zod contract in the main process. Browser sniffing uses an ephemeral isolated session, denies popups, clears storage, and never receives a preload bridge.

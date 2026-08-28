@@ -21,5 +21,9 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Content graph | html-video `content-graph/src/index.ts`, `core/src/project.ts` | Future storyboard schema/adapter | 4 |
 | Agents/Codex/Cursor | html-video `runtime/src/detect.ts`, `spawn.ts`, `defs/*` | Future agent adapter | 13 |
 | Studio | html-video `project-studio/public/index.html`, `studio-server.ts` | Future Electron tab consuming the same backend pipeline | 16 integration |
+| URL security/static fetch | html-video `cli/src/fetch-source.ts` | `StaticFetcher`, `assert_public_http_url` | 1 |
+| Article extraction | Videogen `processors/article_parser.py`; html-video `fetch-source.ts`; newsvid `extract_text_from_url` | `ArticleIngestor`, `extract_article` | 1 |
+| Metadata/images | OpenGraph/JSON-LD and DOM patterns inspected across the three sources; no complete implementation | `Source`, `ArticleImage`, `ImageManifest` | 1 |
+| Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
-Phase 0 intentionally creates no LLM, TTS, STT, renderer, template, agent, content-graph or Studio module.
+Phases 0–1 intentionally create no LLM, facts, TTS, STT, renderer, template, agent, content-graph or Studio module.

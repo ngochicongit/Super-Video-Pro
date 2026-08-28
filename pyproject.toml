@@ -4,24 +4,35 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-video-newsvid"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local Windows foundation for fact-grounded Vietnamese news video projects"
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2.10,<3", "PyYAML>=6,<7"]
+dependencies = [
+  "beautifulsoup4>=4.13,<5",
+  "httpx>=0.28,<1",
+  "pydantic>=2.10,<3",
+  "PyYAML>=6,<7",
+  "trafilatura>=2.0,<3",
+]
 license-files = [
   "licenses/upstream/Auto-Create-Video-MIT.txt",
   "licenses/upstream/html-video-Apache-2.0.txt",
+  "licenses/python/beautifulsoup4-MIT.txt",
+  "licenses/python/httpx-BSD-3-Clause.md",
+  "licenses/python/playwright-Apache-2.0.txt",
+  "licenses/python/trafilatura-Apache-2.0.txt",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<9"]
+browser = ["playwright>=1.49,<2"]
 
 [project.scripts]
 newsvid = "newsvid.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["packages/pipeline/src/newsvid"]
+packages = ["packages/pipeline/src/newsvid", "packages/article_ingest/src/newsvid_ingest"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/phase0"]
+testpaths = ["tests/phase0", "tests/phase1"]
 addopts = "-q"
