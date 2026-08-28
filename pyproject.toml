@@ -13,6 +13,7 @@ dependencies = [
   "pydantic>=2.10,<3",
   "PyYAML>=6,<7",
   "trafilatura>=2.0,<3",
+  "fastapi>=0.115,<1",
 ]
 license-files = [
   "licenses/upstream/Auto-Create-Video-MIT.txt",
