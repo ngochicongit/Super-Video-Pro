@@ -44,3 +44,5 @@ Phase 13: html-video `runtime` and `content-graph` inform `discover_agents`, con
 Phase 14: html-video Studio iteration workflow informs `BoundedAutonomousEditor` and its per-scene edit history.
 
 Phase 17: ComfyUI provider/workflow boundary remains the integration point; advanced Wan/LTX/AnimateDiff capabilities are optional disabled-by-default descriptors.
+
+Phase 18: html-video Studio/runtime packaging concepts map to the existing Electron Web Studio shell and NSIS configuration; AI models are intentionally excluded from installer resources.

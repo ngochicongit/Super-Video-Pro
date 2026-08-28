@@ -88,3 +88,5 @@ Phase 13: html-video runtime agent discovery, PATH probing, content-graph stable
 Phase 14: html-video Studio iteration and render loop were reviewed; bounded inspect/edit/validate/preview/QA sequencing is adapted in `autonomous_editor.py` with a hard three-revision limit.
 
 Phase 17: existing ComfyUI image provider and workflows were inspected. Wan, LTX, and AnimateDiff remain capability flags only because no stable, licensed, repository-local video workflow was available; the core pipeline is unchanged and independent.
+
+Phase 18: html-video Studio packaging/runtime boundaries were reviewed. The existing Electron + electron-builder NSIS runtime is retained as the single desktop shell; Tauri is evaluated as a future migration only, since introducing a second shell would duplicate desktop runtime logic.
