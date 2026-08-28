@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "super-video-newsvid"
+version = "0.1.0"
+description = "Local Windows foundation for fact-grounded Vietnamese news video projects"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.10,<3", "PyYAML>=6,<7"]
+license-files = [
+  "licenses/upstream/Auto-Create-Video-MIT.txt",
+  "licenses/upstream/html-video-Apache-2.0.txt",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9"]
+
+[project.scripts]
+newsvid = "newsvid.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["packages/pipeline/src/newsvid"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/phase0"]
+addopts = "-q"

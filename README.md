@@ -37,6 +37,20 @@ pnpm package
 
 The NSIS installer is emitted under `release/`.
 
+## AI News Video — Phase 0
+
+The Python foundation is isolated from the Electron renderer and currently exposes project/checkpoint management plus dependency diagnostics. It intentionally does not generate a video yet.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python -m pip install -e ".[dev]"
+.\.venv\Scripts\newsvid doctor
+.\.venv\Scripts\newsvid project create "Bản tin thử nghiệm"
+.\.venv\Scripts\pytest
+```
+
+The upstream audit and provenance records are in `docs/UPSTREAM_REUSE_AUDIT.md`, `docs/UPSTREAM_SOURCE_MAP.md`, and `THIRD_PARTY_NOTICES.md`.
+
 ## Security boundary
 
 The renderer has `nodeIntegration: false`, `contextIsolation: true`, and `sandbox: true`. It receives only the narrow API exposed by preload. Every request and response is checked against a Zod contract in the main process. Browser sniffing uses an ephemeral isolated session, denies popups, clears storage, and never receives a preload bridge.

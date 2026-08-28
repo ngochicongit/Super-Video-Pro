@@ -16,3 +16,11 @@ The queue restores unsafe in-flight states to `queued` after restart. A job fail
 4. Ephemeral sandboxed browser sniffer.
 
 Recorded/pure fixtures and a local HTTP fixture test run in normal CI. Real-site smoke testing is intentionally separate because it is volatile and externally controlled.
+
+## AI News Video Phase 0 boundary
+
+The existing Electron/React/TypeScript application remains the desktop shell. The new `packages/pipeline/src/newsvid` Python package owns future article-to-video business logic so Electron will eventually call one pipeline rather than duplicate it.
+
+Phase 0 contains only configuration, strict Pydantic project/checkpoint schemas, atomic JSON persistence, structured logging, project management and dependency diagnostics. It does not ingest URLs, invoke AI services, render media or add a UI tab.
+
+Projects live beneath the configured `projects_dir`. Each ID is validated before path resolution. `project.json` and `checkpoint.json` are atomically replaced; stage state uses the canonical stage enumeration from `MASTER_PLAN.md`. Future stage implementations must write through these boundaries and must not import from `.upstream/`.

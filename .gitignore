@@ -16,3 +16,8 @@ vendor/*.zip
 .codex_spreadsheet_work/
 .ui-refactor/runs/
 .ui-refactor/latest.json
+.upstream/
+.venv/
+projects/
+__pycache__/
+.pytest_cache/
