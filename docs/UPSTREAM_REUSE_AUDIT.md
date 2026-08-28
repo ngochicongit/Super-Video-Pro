@@ -78,3 +78,5 @@ Reviewed through 2026-08-29. All repositories live under ignored `.upstream/` pa
 - Phase 10 caption retiming: inspected xfade implementations shorten the timeline but do not adjust precomputed global ASS timestamps; transition-aware ASS retiming was required to preserve synchronization.
 
 No upstream tests were copied verbatim. Phase 10 ports xfade/acrossfade filter expectations, hard-cut concat behavior, codec mapping and ASS-burn ordering. It extends coverage with mixed-engine normalization, transition retiming and a real article-image + Chromium motion + ComfyUI-provenance AI-image render at 1080x1920/30 H.264/AAC.
+
+Phase 11: Videogen checkpoint/cache dependency concepts are adapted through selective_regeneration.py, providing deterministic scene-local invalidation while preserving unrelated cache entries.

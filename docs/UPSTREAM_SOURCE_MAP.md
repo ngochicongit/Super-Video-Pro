@@ -34,3 +34,5 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
 Phase 10 removes the former article-specific final coordinator. Image, motion and generated-AI scenes now converge through `SceneRenderer` into `RenderedScene`; `FinalAssembler` alone owns mixed-scene normalization, transition assembly, preview, ASS composition, final encoding and media validation. No Phase 11 dependency graph or invalidation API is introduced.
+
+Phase 11: selective_regeneration.py adapts Videogen checkpoint/cache dependency concepts behind a project-neutral invalidation planner.

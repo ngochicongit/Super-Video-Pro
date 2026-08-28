@@ -16,6 +16,7 @@ from .motion_renderer import MOTION_TYPES, SceneRenderer
 from .persistence import atomic_write_model, load_model
 from .project import ProjectManager
 from .schemas import PipelineStage, StageStatus
+from .selective_regeneration import ChangeKind, InvalidationPlan, plan_invalidation
 
 
 TARGET_WIDTH = 1080
@@ -33,6 +34,10 @@ class VideoRenderCoordinator:
         self.image_cache = image_cache
         self.scene_renderer = scene_renderer
         self.assembler = assembler
+
+    @staticmethod
+    def dependency_plan(kind: ChangeKind | str, scene_ids: list[str] | tuple[str, ...] = ()) -> InvalidationPlan:
+        return plan_invalidation(kind, scene_ids)
 
     def preview(self, project_id: str, *, transition: TransitionConfig) -> PreviewResult:
         directory, storyboard, rendered, _, preview_fingerprint = self._render_scenes(
