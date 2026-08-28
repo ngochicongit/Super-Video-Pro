@@ -13,6 +13,7 @@ import {useAppStore} from "./store";
 import {hydratedUiState,recentUrlsWith} from "./ui-state";
 import {WindowBar} from "./window-bar";
 import {aggregateTaskProgress} from "./task-progress";
+import {WebStudio} from "./web-studio";
 
 export function App(){
   const {settings,load,add,saveSettings,jobs}=useAppStore();
@@ -43,6 +44,7 @@ export function App(){
       <section className="tab-panel" role="tabpanel">
         {tab==="download"&&<DownloadComposer url={url} setUrl={setUrl} resource={resource} setResource={setResource} selected={selected} setSelected={setSelected} inspecting={inspecting} inspectError={inspectError} setInspectError={setInspectError} batch={batch} setBatch={setBatch} inspect={inspect} submit={submit}/>}
         {tab==="composition"&&<CompositionBuilder/>}
+        {tab==="studio"&&<WebStudio/>}
         {tab==="history"&&<><header className="page-heading"><h2>{t("tab_history")}</h2><p>{t("history_hint")}</p></header><JobQueue scope="history" filter={filter} setFilter={setFilter} query={query} setQuery={setQuery}/><CompositionJobs scope="history"/></>}
       </section>
     </main>
