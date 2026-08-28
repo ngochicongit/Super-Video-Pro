@@ -16,7 +16,8 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | STT/alignment | Videogen `clients/stt.py`, `pipeline/orchestrator.py` stage 5, `types.py` | `AlignmentProvider`, loopback `WhisperXProvider`, `AlignmentCoordinator`, `WordsDocument` | 6 |
 | Subtitles | Videogen `generators/subtitles.py`, `tests/test_subtitles.py`, `processors/subtitle_qa.py` | `generate_ass`, `SubtitleLayout`, safe-area/overflow report | 6 |
 | Article image acquisition/cache | Videogen `clients/image_search.py`, `tests/test_image_search.py` | `ArticleImageCache`, `ImageAsset` | 7 |
-| FFmpeg scene/final composition | Videogen `assembler/compositor.py`, `encoder.py`; current Electron FFmpeg execution conventions | `FFmpegArticleRenderer`, `ArticleVideoCoordinator` | 7 basic / 10 advanced |
+| FFmpeg scene composition | Videogen `assembler/compositor.py`; current Electron FFmpeg execution conventions | `FFmpegArticleRenderer`, `SceneRenderer` | 7 basic / 10 unified |
+| Final assembly / transitions | Videogen `assembler/transitions.py`, `encoder.py`; html-video `core/src/project.ts` concat/audio helpers; Auto-Create-Video `assets/audio-tools.ts` | `RenderedScene`, `FinalAssembler`, `VideoRenderCoordinator` | 10 |
 | Ken Burns | Videogen `assembler/ken_burns.py`, tests; Auto-Create-Video `html-composer.ts` | FFmpeg crop/scale/zoompan presets | 7 |
 | HyperFrames/GSAP | Auto-Create-Video `hyperframes-runner.ts`, `html-composer.ts`, `script-schema.ts`, template CSS/JS; html-video HyperFrames adapter | `MotionTemplateInput`, embedded GSAP templates, `HyperFramesChromiumRenderer` | 8 |
 | Chromium renderer | html-video `adapter-hyperframes/src/render.ts` and validation/capabilities; template discovery/metadata | `render-motion-scene.mjs`, Playwright Edge recording, FFmpeg encoding | 8 |
@@ -32,4 +33,4 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Metadata/images | OpenGraph/JSON-LD and DOM patterns inspected across the three sources; no complete implementation | `Source`, `ArticleImage`, `ImageManifest` | 1 |
 | Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
-Phase 9 adds optional ComfyUI visual generation through one provider boundary and the three required declarative workflows. It intentionally does not start/stop ComfyUI, add video generation, assemble Phase 10 transitions, or make `.upstream/` a runtime dependency. Storyboard remains the editing source of truth; generated paths are committed there only after the complete requested visual set succeeds.
+Phase 10 removes the former article-specific final coordinator. Image, motion and generated-AI scenes now converge through `SceneRenderer` into `RenderedScene`; `FinalAssembler` alone owns mixed-scene normalization, transition assembly, preview, ASS composition, final encoding and media validation. No Phase 11 dependency graph or invalidation API is introduced.

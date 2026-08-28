@@ -1,6 +1,6 @@
 # Third-party notices — AI News Video
 
-Phases 0–9 were reviewed against these read-only upstream snapshots. The application has no runtime dependency on `.upstream/`.
+Phases 0–10 were reviewed against these read-only upstream snapshots. The application has no runtime dependency on `.upstream/`.
 
 ## Auto-Create-Video
 
@@ -8,14 +8,14 @@ Phases 0–9 were reviewed against these read-only upstream snapshots. The appli
 - Commit reviewed: `8c2e04337ca7fb574692c5830dafde35ac2017cd`
 - Copyright: Copyright (c) 2026 Ho Quang Hai
 - License: MIT; full text in `licenses/upstream/Auto-Create-Video-MIT.txt`.
-- Phase 0–8 use: Phase 8 adapts the licensed structured scene schema, audio-derived timing, GSAP timeline concepts and Vietnamese social-news visual language. No upstream TypeScript source or media asset is copied.
+- Phase 0–10 use: Phase 10 additionally adapts licensed sample-rate/channel normalization concepts from `audio-tools.ts`. No upstream TypeScript source or media asset is copied.
 
 ## html-video
 
 - Repository: https://github.com/nexu-io/html-video
 - Commit reviewed: `c414ecc07f795add03807d5d9ce4baefd807cea2`
 - License: Apache License 2.0; full text in `licenses/upstream/html-video-Apache-2.0.txt`.
-- Phase 0–8 use: Phase 8 adapts the Apache-2.0 Playwright/Chromium recordVideo → WebM → FFmpeg foundation and template metadata/discovery concepts into the existing SceneRenderer boundary.
+- Phase 0–10 use: Phase 10 additionally adapts the Apache-2.0 mixed-engine concat normalization rationale and FFmpeg export boundary into `FinalAssembler`.
 - The upstream template attribution chain was reviewed in `ATTRIBUTIONS.md`; no templates or template assets are distributed through Phase 5.
 
 ## Videogen
@@ -23,7 +23,7 @@ Phases 0–9 were reviewed against these read-only upstream snapshots. The appli
 - Repository: https://github.com/Juwebien/videogen
 - Commit reviewed: `6134ccdb05a19b8c88bc6609eafe47aefee7adca`
 - License: no license file was present in the reviewed snapshot.
-- Phase 0–9 use: `REFERENCE_ONLY` at the source-license level. Phase 9 independently implements the provider adapter and workflows after reviewing observable ComfyUI API behavior because no license grant permits copying source. No source, workflow, model or asset was copied.
+- Phase 0–10 use: `REFERENCE_ONLY` at the source-license level. Phase 10 independently implements transition assembly after reviewing observable xfade/acrossfade and ASS-burn behavior because no license grant permits copying source. No source, workflow, model or asset was copied.
 
 ## newsvid
 
@@ -47,6 +47,8 @@ Phase 6 adds no Python dependency or copied model/font. WhisperX is an optional 
 Phase 7 adds no Python dependency or copied image/media asset. It invokes the operator-installed FFmpeg/FFprobe already required by the application. Article images retain their source URLs in project provenance and remain subject to their publishers' rights and terms.
 
 Phase 9 adds no third-party package, model or copied workflow. ComfyUI and its checkpoints are optional external local components installed and licensed separately by the operator. The project communicates only through ComfyUI's local HTTP surface.
+
+Phase 10 adds no third-party dependency or copied media. It uses the operator-installed FFmpeg/FFprobe and the already-noticed Playwright/GSAP runtime. Existing upstream license texts remain sufficient; no new license file is required.
 
 ## Phase 8 JavaScript runtime dependencies
 

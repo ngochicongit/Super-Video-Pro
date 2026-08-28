@@ -12,15 +12,18 @@ from typing import Any
 import httpx
 import pytest
 
-from newsvid.article_renderer import (ArticleImageCache, ArticleVideoCoordinator,
-                                      FFmpegArticleRenderer)
+from newsvid.article_renderer import ArticleImageCache, FFmpegArticleRenderer
+from newsvid.final_assembler import FinalAssembler
+from newsvid.motion_renderer import HyperFramesChromiumRenderer, SceneRenderer
+from newsvid.video_renderer import VideoRenderCoordinator
 from newsvid.checkpoint import CheckpointStore
 from newsvid.persistence import atomic_write_model, atomic_write_text
 from newsvid.persistence import load_model
 from newsvid.project import ProjectManager
 from newsvid.schemas import PipelineStage, StageStatus
 from newsvid_brain import (Fact, FactSet, FactSource, ImageAsset, NewsStyle, RenderError, SceneType,
-                           SourceType, Storyboard, StoryboardScene, VisualPlan,
+                           SourceType, Storyboard, StoryboardScene, TransitionConfig,
+                           TransitionType, VisualPlan,
                            VisualProvenance)
 from newsvid_brain.storyboard_models import StoryboardVideo
 from newsvid_brain.tts_models import AudioCacheEntry, TTSManifest
@@ -116,7 +119,7 @@ def seed_render_project(tmp_path: Path, ffmpeg: str) -> tuple[ProjectManager, st
                         provenance=VisualProvenance(source_type=SourceType.ARTICLE,
                                                     source_url=source_url))
     atomic_write_model(directory / "storyboard.json", Storyboard(
-        video=StoryboardVideo(width=360, height=640, fps=15, target_duration=30,
+        video=StoryboardVideo(width=1080, height=1920, fps=30, target_duration=30,
                               style=NewsStyle.TECH_NEWS),
         scenes=[StoryboardScene(id="scene_001", script_segment_id="segment_001",
                                 type=SceneType.ARTICLE_IMAGE, narration="Tin mới Việt Nam.",
@@ -132,8 +135,8 @@ def seed_render_project(tmp_path: Path, ffmpeg: str) -> tuple[ProjectManager, st
                                  normalized_text="Tin mới Việt Nam.", duration_seconds=1.2)]))
     ass = """[Script Info]
 ScriptType: v4.00+
-PlayResX: 360
-PlayResY: 640
+PlayResX: 1080
+PlayResY: 1920
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: NewsVi,Arial,32,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,2,1,2,20,20,100,1
@@ -152,20 +155,22 @@ def test_actual_article_asset_vertical_mp4_render_without_comfyui(tmp_path: Path
     if not ffmpeg or not ffprobe:
         pytest.skip("FFmpeg/FFprobe unavailable")
     manager, project_id = seed_render_project(tmp_path, ffmpeg)
-    coordinator = ArticleVideoCoordinator(manager, ArticleImageCache(),
-                                          FFmpegArticleRenderer(ffmpeg=ffmpeg, ffprobe=ffprobe))
-    result = coordinator.render(project_id)
-    cached = coordinator.render(project_id)
+    article = FFmpegArticleRenderer(ffmpeg=ffmpeg, ffprobe=ffprobe)
+    motion = HyperFramesChromiumRenderer(repository_root=Path.cwd(), ffmpeg=ffmpeg)
+    coordinator = VideoRenderCoordinator(manager, ArticleImageCache(), SceneRenderer(article, motion),
+                                         FinalAssembler(ffmpeg=ffmpeg, ffprobe=ffprobe))
+    transition = TransitionConfig(type=TransitionType.NONE, duration_seconds=0)
+    result = coordinator.render(project_id, transition=transition)
+    cached = coordinator.render(project_id, transition=transition)
     directory = manager.project_dir(project_id)
     output = directory / result.output_path
     assert output.is_file() and output.stat().st_size > 5_000
-    assert result.probe.width == 360 and result.probe.height == 640
+    assert result.probe.width == 1080 and result.probe.height == 1920 and result.probe.fps == 30
     assert result.probe.video_codec == "h264" and result.probe.audio_codec == "aac"
     assert 1.0 <= result.probe.duration_seconds <= 1.5
     assert result.comfyui_used is False and cached == result
-    assert (directory / "output" / "article-video.preview.mp4").is_file()
+    assert (directory / "output" / "preview.mp4").is_file()
     checkpoint = CheckpointStore(directory / "checkpoint.json").load()
-    assert checkpoint.stages[PipelineStage.VISUALS].status is StageStatus.COMPLETED
     assert checkpoint.stages[PipelineStage.SCENES].status is StageStatus.COMPLETED
     assert checkpoint.stages[PipelineStage.PREVIEW].status is StageStatus.COMPLETED
     assert checkpoint.stages[PipelineStage.FINAL_RENDER].status is StageStatus.COMPLETED
@@ -182,6 +187,11 @@ def test_renderer_rejects_unresolved_factual_scene_before_ffmpeg(tmp_path: Path)
     board.scenes[0].fact_refs = ["fact_999"]
     atomic_write_model(directory / "storyboard.json", board)
     with pytest.raises(RenderError, match="unresolved fact"):
-        ArticleVideoCoordinator(manager, ArticleImageCache(),
-                                FFmpegArticleRenderer(ffmpeg=ffmpeg, ffprobe=ffprobe)).render(project_id)
-    assert not (directory / "output" / "article-video.mp4").exists()
+        article = FFmpegArticleRenderer(ffmpeg=ffmpeg, ffprobe=ffprobe)
+        motion = HyperFramesChromiumRenderer(repository_root=Path.cwd(), ffmpeg=ffmpeg)
+        VideoRenderCoordinator(manager, ArticleImageCache(), SceneRenderer(article, motion),
+                               FinalAssembler(ffmpeg=ffmpeg, ffprobe=ffprobe)).render(
+                                   project_id,
+                                   transition=TransitionConfig(type=TransitionType.NONE,
+                                                               duration_seconds=0))
+    assert not (directory / "output" / "final.mp4").exists()

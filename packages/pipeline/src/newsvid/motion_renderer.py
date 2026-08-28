@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 from typing import Callable
 
-from newsvid_brain import RenderError, StoryboardScene
+from newsvid_brain import RenderError, RenderedScene, StoryboardScene
 from newsvid_brain.motion_models import MotionRenderResult, MotionTemplate, MotionTemplateInput
 from newsvid_brain.motion_templates import TEMPLATE_VERSION, render_motion_html
 from newsvid_brain.storyboard_models import SceneType
@@ -144,7 +144,8 @@ class SceneRenderer:
 
     def render(self, scene: StoryboardScene, *, image: Path | None, audio: Path,
                output: Path, width: int, height: int, fps: int, duration: float,
-               effect: str = "zoom_in") -> str:
+               fingerprint: str, source_path: str, audio_path: str,
+               effect: str = "zoom_in") -> RenderedScene:
         if scene.type in MOTION_TYPES or scene.visual.type in MOTION_TYPES:
             spec = motion_input_for_scene(scene, width=width, height=height, fps=fps, duration=duration)
             silent = output.with_suffix(".motion.mp4")
@@ -154,12 +155,19 @@ class SceneRenderer:
                 self.article.mux_audio(silent, audio, output, duration=duration)
             finally:
                 silent.unlink(missing_ok=True)
-            return self.motion.engine
-        if image is None:
-            raise RenderError(f"Article image is required for scene {scene.id}")
-        self.article.render_scene(image, audio, output, duration=duration,
-                                  width=width, height=height, fps=fps, effect=effect)
-        return "ffmpeg-article-image"
+            renderer = self.motion.engine
+        else:
+            if image is None:
+                raise RenderError(f"Image visual is required for scene {scene.id}")
+            self.article.render_scene(image, audio, output, duration=duration,
+                                      width=width, height=height, fps=fps, effect=effect)
+            renderer = ("ffmpeg-ai-image" if scene.visual.provenance.generator == "comfyui"
+                        else "ffmpeg-article-image")
+        return RenderedScene(
+            scene_id=scene.id, source_path=source_path, audio_path=audio_path,
+            video_path=f"scenes/{scene.id}.mp4", effect=effect, renderer=renderer,
+            duration_seconds=duration, fingerprint=fingerprint,
+        )
 
 
 def _numbers(text: str) -> list[str]:

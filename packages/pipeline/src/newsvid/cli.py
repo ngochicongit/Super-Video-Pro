@@ -13,15 +13,18 @@ from .ingestion import IngestionCoordinator
 from newsvid_ingest.errors import ArticleExtractionError
 from newsvid_brain import (AlignmentError, F5TTSConfig, F5TTSProvider, LLMError, NewsStyle,
                            OllamaConfig, OllamaProvider, PiperConfig, PiperProvider,
-                           RenderError, SubtitleLayout, TTSError, WhisperXConfig, WhisperXProvider,
+                           RenderError, SubtitleLayout, TTSError, TransitionConfig, TransitionType,
+                           WhisperXConfig, WhisperXProvider,
                            load_pronunciation)
 from .facts import FactsCoordinator
 from .scripts import ScriptCoordinator
 from .storyboards import StoryboardCoordinator
 from .tts import TTSCoordinator
 from .alignment import AlignmentCoordinator
-from .article_renderer import ArticleImageCache, ArticleVideoCoordinator, FFmpegArticleRenderer
+from .article_renderer import ArticleImageCache, FFmpegArticleRenderer
 from .motion_renderer import HyperFramesChromiumRenderer, SceneRenderer
+from .final_assembler import FinalAssembler
+from .video_renderer import VideoRenderCoordinator
 from .comfyui import HTTPComfyUIProvider
 from .visuals import VisualCoordinator
 
@@ -60,8 +63,16 @@ def _parser() -> argparse.ArgumentParser:
     align.add_argument("project_id")
     visuals = commands.add_parser("visuals", help="Generate optional ComfyUI storyboard visuals")
     visuals.add_argument("project_id")
-    render = commands.add_parser("render-article", help="Render article imagery, narration and subtitles to vertical MP4")
-    render.add_argument("project_id")
+    for command_name, help_text in (
+        ("render", "Render the complete 1080x1920 video"),
+        ("preview", "Assemble a caption-free 1080x1920 preview"),
+        ("render-article", "Compatibility alias for the unified final renderer"),
+    ):
+        render = commands.add_parser(command_name, help=help_text)
+        render.add_argument("project_id")
+        render.add_argument("--transition", choices=[item.value for item in TransitionType],
+                            default=TransitionType.FADE.value)
+        render.add_argument("--transition-duration", type=float, default=.35)
     project = commands.add_parser("project", help="Manage Phase 0 projects")
     project_commands = project.add_subparsers(dest="project_command", required=True)
     create = project_commands.add_parser("create", help="Create a project")
@@ -196,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
         result = VisualCoordinator(manager, provider).generate(args.project_id)
         _print_model(result)
         return 2 if result.failures else 0
-    if args.command == "render-article":
+    if args.command in {"render", "preview", "render-article"}:
         try:
             repository_root = Path.cwd() if (Path.cwd() / "package.json").is_file() else Path(__file__).resolve().parents[4]
             ffmpeg_renderer = FFmpegArticleRenderer(ffmpeg=config.services.ffmpeg_executable,
@@ -206,11 +217,17 @@ def main(argv: list[str] | None = None) -> int:
                 node=config.services.node_executable, ffmpeg=config.services.ffmpeg_executable,
                 chromium=config.services.chromium_executable,
             )
-            result = ArticleVideoCoordinator(
-                manager,
-                ArticleImageCache(max_bytes=config.services.image_max_bytes),
-                ffmpeg_renderer, SceneRenderer(ffmpeg_renderer, motion_renderer),
-            ).render(args.project_id)
+            coordinator = VideoRenderCoordinator(
+                manager, ArticleImageCache(max_bytes=config.services.image_max_bytes),
+                SceneRenderer(ffmpeg_renderer, motion_renderer),
+                FinalAssembler(ffmpeg=config.services.ffmpeg_executable,
+                               ffprobe=config.services.ffprobe_executable),
+            )
+            transition = TransitionConfig(type=TransitionType(args.transition),
+                                          duration_seconds=args.transition_duration)
+            result = (coordinator.preview(args.project_id, transition=transition)
+                      if args.command == "preview"
+                      else coordinator.render(args.project_id, transition=transition))
         except (RenderError, OSError, ValueError) as exc:
             print(f"RENDER ERROR: {exc}")
             return 2

@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from newsvid.article_renderer import FFmpegArticleRenderer
+from newsvid.final_assembler import FinalAssembler
 from newsvid.motion_renderer import (HyperFramesChromiumRenderer, SceneRenderer,
                                      motion_input_for_scene)
 from newsvid_brain import (MotionTemplate, MotionTemplateInput, SceneType,
@@ -103,9 +104,10 @@ def test_scene_renderer_integrates_motion_video_with_audio_and_ffmpeg(tmp_path: 
     ffmpeg_renderer = FFmpegArticleRenderer()
     engine = SceneRenderer(ffmpeg_renderer, runtime()).render(
         scene, image=None, audio=audio, output=output, width=320, height=568,
-        fps=10, duration=.6)
-    probe = ffmpeg_renderer.probe(output)
-    assert engine == "html-video-playwright-hyperframes-adapter"
+        fps=10, duration=.6, fingerprint="sha256:" + "a" * 64,
+        source_path="motion-generated", audio_path="audio/scene_001.wav")
+    probe = FinalAssembler().probe(output)
+    assert engine.renderer == "html-video-playwright-hyperframes-adapter"
     assert (probe.width, probe.height, probe.video_codec, probe.audio_codec) == (320, 568, "h264", "aac")
     assert .5 <= probe.duration_seconds <= .8
 
