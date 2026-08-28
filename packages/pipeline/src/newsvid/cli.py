@@ -27,6 +27,7 @@ from .final_assembler import FinalAssembler
 from .video_renderer import VideoRenderCoordinator
 from .comfyui import HTTPComfyUIProvider
 from .visuals import VisualCoordinator
+from .qa import QACoordinator
 
 
 def _print_model(model: object) -> None:
@@ -63,6 +64,8 @@ def _parser() -> argparse.ArgumentParser:
     align.add_argument("project_id")
     visuals = commands.add_parser("visuals", help="Generate optional ComfyUI storyboard visuals")
     visuals.add_argument("project_id")
+    qa = commands.add_parser("qa", help="Validate project assets and rendered output")
+    qa.add_argument("project_id")
     for command_name, help_text in (
         ("render", "Render the complete 1080x1920 video"),
         ("preview", "Assemble a caption-free 1080x1920 preview"),
@@ -207,6 +210,10 @@ def main(argv: list[str] | None = None) -> int:
         result = VisualCoordinator(manager, provider).generate(args.project_id)
         _print_model(result)
         return 2 if result.failures else 0
+    if args.command == "qa":
+        report = QACoordinator(manager, FinalAssembler(ffmpeg=config.services.ffmpeg_executable, ffprobe=config.services.ffprobe_executable)).run(args.project_id)
+        _print_model(type("QAReport", (), {"model_dump": lambda self, mode=None: report})())
+        return 2 if report["status"] == "fail" else 0
     if args.command in {"render", "preview", "render-article"}:
         try:
             repository_root = Path.cwd() if (Path.cwd() / "package.json").is_file() else Path(__file__).resolve().parents[4]
