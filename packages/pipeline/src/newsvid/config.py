@@ -11,6 +11,9 @@ class ServiceConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     ollama_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "qwen2.5:7b"
+    ollama_temperature: float = Field(default=0.1, ge=0, le=2)
+    ollama_timeout_seconds: float = Field(default=120, gt=0)
+    ollama_max_attempts: int = Field(default=3, ge=1, le=5)
     comfyui_url: str = "http://127.0.0.1:8188"
 
 

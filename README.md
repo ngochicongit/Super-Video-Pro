@@ -37,9 +37,9 @@ pnpm package
 
 The NSIS installer is emitted under `release/`.
 
-## AI News Video — Phase 0
+## AI News Video — Phases 0–2
 
-The Python foundation is isolated from the Electron renderer and currently exposes project/checkpoint management plus dependency diagnostics. It intentionally does not generate a video yet.
+The Python foundation is isolated from the Electron renderer and exposes project/checkpoint management, article ingestion, and grounded fact extraction. It intentionally does not generate a script or video yet.
 
 ```powershell
 python -m venv .venv
@@ -59,6 +59,16 @@ The upstream audit and provenance records are in `docs/UPSTREAM_REUSE_AUDIT.md`,
 ```
 
 The command creates a project containing validated `source.json`, `article.md`, and `images.json`. Static extraction is the default. Install the optional JS-page fallback with `pip install -e ".[browser]"` followed by `playwright install chromium`.
+
+### Grounded facts
+
+With local Ollama running and the configured model installed:
+
+```powershell
+.\.venv\Scripts\newsvid facts <project-id>
+```
+
+The command creates schema-validated `facts.json`. Each fact has a deterministic ID, claim, verbatim article evidence, importance, confidence, and source metadata. Invalid or ungrounded model output fails the FACTS checkpoint without replacing a valid artifact.
 
 ## Security boundary
 

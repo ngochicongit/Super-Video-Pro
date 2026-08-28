@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-video-newsvid"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local Windows foundation for fact-grounded Vietnamese news video projects"
 requires-python = ">=3.11"
 dependencies = [
@@ -31,8 +31,8 @@ browser = ["playwright>=1.49,<2"]
 newsvid = "newsvid.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["packages/pipeline/src/newsvid", "packages/article_ingest/src/newsvid_ingest"]
+packages = ["packages/pipeline/src/newsvid", "packages/article_ingest/src/newsvid_ingest", "packages/brain/src/newsvid_brain"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/phase0", "tests/phase1"]
+testpaths = ["tests/phase0", "tests/phase1", "tests/phase2"]
 addopts = "-q"

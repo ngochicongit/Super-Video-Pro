@@ -20,3 +20,9 @@ See `docs/ARCHITECTURE.md` for the existing Electron architecture and `docs/UPST
 `newsvid ingest` routes a public URL through a bounded static HTTP fetch and Trafilatura. If the result cannot produce a valid article, the optional Playwright adapter performs one guarded browser fetch and the same extractor validates its output. BeautifulSoup DOM heuristics are the final content reducer, not a separate unvalidated output path.
 
 The coordinator atomically writes `source.json`, `article.md` and `images.json`, then completes the INGEST checkpoint with a deterministic fingerprint. Scraped scripts are parsed only as inert JSON-LD metadata and never reach the Electron renderer.
+
+## Phase 2 grounded facts
+
+`LLMProvider` keeps fact extraction independent of a particular model service. `OllamaProvider` implements Ollama's native `/api/chat` structured-output contract with bounded transient retries; malformed JSON and schema violations fail immediately.
+
+`FactsCoordinator` reads only the persisted Phase 1 source and article, requests candidate facts, validates strict Pydantic schemas, checks every evidence quote against normalized `article.md`, and assigns deterministic IDs locally. It atomically writes `facts.json` and fingerprints article, source, prompt version, and provider configuration for safe cache reuse. Script generation remains absent until Phase 3.

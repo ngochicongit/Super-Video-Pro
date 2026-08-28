@@ -12,6 +12,8 @@ describe("task progress",()=>{
     expect(parseFfmpegTime("00:01:30.500000")).toBe(90.5);
     expect(parseFfmpegProgressLine("out_time_us=2500000")).toBe(2.5);
     expect(parseFfmpegProgressLine("out_time=00:00:03.250000")).toBe(3.25);
+    expect(parseFfmpegProgressLine("out_time_us=N/A")).toBeNull();
+    expect(parseFfmpegProgressLine("out_time_ms=invalid")).toBeNull();
     expect(parseFfmpegProgressLine("progress=continue")).toBeNull();
   });
 });

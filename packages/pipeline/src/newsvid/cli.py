@@ -11,6 +11,8 @@ from .project import ProjectManager
 from .schemas import PipelineStage, StageStatus
 from .ingestion import IngestionCoordinator
 from newsvid_ingest.errors import ArticleExtractionError
+from newsvid_brain import LLMError, OllamaConfig, OllamaProvider
+from .facts import FactsCoordinator
 
 
 def _print_model(model: object) -> None:
@@ -30,6 +32,8 @@ def _parser() -> argparse.ArgumentParser:
     ingest.add_argument("--name", help="Name for a newly created project")
     ingest.add_argument("--source-url", default="https://fixture.invalid/article", help="Canonical URL used with a local fixture")
     ingest.add_argument("--no-browser-fallback", action="store_true")
+    facts = commands.add_parser("facts", help="Extract grounded facts from article.md")
+    facts.add_argument("project_id")
     project = commands.add_parser("project", help="Manage Phase 0 projects")
     project_commands = project.add_subparsers(dest="project_command", required=True)
     create = project_commands.add_parser("create", help="Create a project")
@@ -68,6 +72,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"INGEST ERROR: {exc}")
             return 2
         _print_model(project)
+        return 0
+    if args.command == "facts":
+        provider = OllamaProvider(OllamaConfig(
+            base_url=config.services.ollama_url,
+            model=config.services.ollama_model,
+            temperature=config.services.ollama_temperature,
+            timeout_seconds=config.services.ollama_timeout_seconds,
+            max_attempts=config.services.ollama_max_attempts,
+        ))
+        try:
+            result = FactsCoordinator(manager, provider).extract(args.project_id)
+        except (LLMError, OSError, ValueError) as exc:
+            print(f"FACTS ERROR: {exc}")
+            return 2
+        _print_model(result)
         return 0
     if args.command == "project" and args.project_command == "create":
         project = manager.create(args.name)

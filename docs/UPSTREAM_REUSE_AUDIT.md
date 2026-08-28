@@ -1,4 +1,4 @@
-# Upstream reuse audit — Phases 0–1
+# Upstream reuse audit — Phases 0–2
 
 Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and are read-only references. Runtime code does not import from them.
 
@@ -14,7 +14,10 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 | Doctor | html-video | `packages/cli/src/commands/doctor.ts`, `packages/runtime/src/detect.ts` | Apache-2.0 | ADAPT | `packages/pipeline/src/newsvid/doctor.py` | Adapted command discovery/reporting to Windows dependencies and required/optional semantics. |
 | CLI | html-video / newsvid | `packages/cli/src/bin.ts`, `commands/project.ts`; `newsvid` | Apache-2.0 / No license | ADAPT | `packages/pipeline/src/newsvid/cli.py` | Phase 0 exposes only doctor, project and checkpoint commands; generation commands are intentionally absent. |
 | Structured logging | Videogen / current app | `src/videogen/log.py`; `src/main/diagnostics.ts` | No license / project code | EXTEND | `packages/pipeline/src/newsvid/logging.py` | Preserves the current application's JSON diagnostics boundary in a Python package; no upstream code copied. |
-| LLM | Videogen / newsvid | `clients/llm.py`; `newsvid` | No license | REFERENCE_ONLY | Phase 2 | Provider boundaries and Ollama health patterns mapped; not implemented early. |
+| LLM abstraction / Ollama | Videogen / newsvid | `clients/llm.py`, `config.py`; `newsvid` (`init_ollama_client`, model constants) | No license | REFERENCE_ONLY | `newsvid_brain.providers` | Endpoint/model boundaries informed the independent `LLMProvider` and native `OllamaProvider`; no source copied. |
+| Structured generation / JSON | Videogen | `clients/llm.py`, `generators/script.py` | No license | REFERENCE_ONLY | `newsvid_brain.models`, `service.py` | JSON-only prompt and fenced-output behavior were reviewed. Phase 2 uses Ollama JSON Schema, strict Pydantic validation, and deliberately rejects fences/ambiguous output. |
+| Transient LLM retry | Videogen / newsvid | `retry.py`; `download.py` | No license | REFERENCE_ONLY | `OllamaProvider` | The retryable status set and bounded backoff concept were independently implemented; invalid JSON/schema errors are never retried. |
+| Grounded fact extraction | No complete upstream implementation | — | — | WRITE_NEW | `newsvid_brain.service`, `newsvid.facts` | Required exact evidence grounding, deterministic IDs, source metadata, checkpoint/cache integration and safe failure were absent upstream. |
 | TTS | Videogen / Auto-Create-Video / newsvid | `clients/tts.py`; `src/tts/*`; `tts.py` | No license / MIT / No license | REFERENCE_ONLY | Phase 5 | Actual provider integration is outside Phase 0. |
 | STT/alignment | Videogen | `clients/stt.py` | No license | REFERENCE_ONLY | Phase 6 | Word timestamps mapped; no source copied. |
 | Subtitles | Videogen | `generators/subtitles.py`, `processors/subtitle_qa.py` | No license | REFERENCE_ONLY | Phase 6 | ASS/karaoke and QA concepts mapped only. |
@@ -39,5 +42,7 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 - Phase 0 tests: repository-specific acceptance tests are needed to prove path confinement, project layout, strict schemas and persisted checkpoints without external services.
 - Phase 1 metadata/image extraction: none of the inspected upstreams produces the required source and attributed image manifests.
 - Phase 1 Playwright article adapter: inspected browser code renders video or Studio previews; it does not safely fetch JS-dependent articles into the project's ingestion interface.
+- Phase 2 provider boundary: upstream implementations call one backend directly and expose no project-neutral structured provider contract.
+- Phase 2 facts schema/grounding: neither upstream validates evidence against `article.md`, assigns deterministic fact IDs, or persists a source-aware `facts.json` checkpoint safely.
 
 No upstream tests were copied verbatim. Videogen's article parser tests informed independently written fixture, noise-removal, section and fallback assertions.

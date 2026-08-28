@@ -3,4 +3,7 @@ log_level: INFO
 services:
   ollama_url: http://127.0.0.1:11434
   ollama_model: qwen2.5:7b
+  ollama_temperature: 0.1
+  ollama_timeout_seconds: 120
+  ollama_max_attempts: 3
   comfyui_url: http://127.0.0.1:8188

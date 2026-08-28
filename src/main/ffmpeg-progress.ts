@@ -5,8 +5,8 @@ export function parseFfmpegTime(value:string){
 }
 
 export function parseFfmpegProgressLine(line:string){
-  if(line.startsWith("out_time_us="))return Number(line.slice(12))/1_000_000;
-  if(line.startsWith("out_time_ms="))return Number(line.slice(12))/1_000_000;
+  if(line.startsWith("out_time_us=")){const value=Number(line.slice(12));return Number.isFinite(value)?value/1_000_000:null;}
+  if(line.startsWith("out_time_ms=")){const value=Number(line.slice(12));return Number.isFinite(value)?value/1_000_000:null;}
   if(line.startsWith("out_time="))return parseFfmpegTime(line.slice(9));
   return null;
 }
