@@ -10,6 +10,7 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | CLI/doctor | html-video `cli/src/bin.ts`, `commands/doctor.ts`, `commands/project.ts`; newsvid `newsvid` | `newsvid.cli`, `collect_status` | 0 |
 | LLM/Ollama | Videogen `clients/llm.py`, `retry.py`, `config.py`; newsvid `newsvid` (`init_ollama_client`, `verify_ollama_server`, model/prompt configuration) | `LLMProvider`, `OllamaProvider`, `OllamaConfig` | 2 |
 | Structured facts | Videogen JSON parsing/schema checks and prompt infrastructure; no upstream grounded-facts implementation | `CandidateFacts`, `FactSet`, `FactExtractor`, `FactsCoordinator` | 2 |
+| Vietnamese news script | Videogen `generators/script.py`, `processors/content_chunker.py`; Auto-Create-Video `render/script-schema.ts`, `pipeline.ts`; newsvid `generate_script` and TTS word-duration estimates | `CandidateScript`, `NewsScript`, `ScriptGenerator`, `ScriptCoordinator` | 3 |
 | TTS | Videogen `clients/tts.py`; Auto-Create-Video `src/tts/*`; newsvid `tts.py` | Future `TTSProvider` | 5 |
 | STT/alignment | Videogen `clients/stt.py` | Future alignment provider | 6 |
 | Subtitles | Videogen `generators/subtitles.py`, `processors/subtitle_qa.py` | Future subtitle package | 6 |
@@ -27,4 +28,4 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Metadata/images | OpenGraph/JSON-LD and DOM patterns inspected across the three sources; no complete implementation | `Source`, `ArticleImage`, `ImageManifest` | 1 |
 | Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
-Phases 0–2 intentionally create no script, TTS, STT, renderer, template, agent, content-graph or Studio module. Phase 2 adds only the provider-neutral LLM boundary and ARTICLE → FACTS flow.
+Phases 0–3 intentionally create no storyboard, TTS, STT, renderer, template, agent, content-graph or Studio module. Phase 3 adds only FACTS → Vietnamese `script.json` generation.

@@ -1,4 +1,4 @@
-# Upstream reuse audit — Phases 0–2
+# Upstream reuse audit — Phases 0–3
 
 Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and are read-only references. Runtime code does not import from them.
 
@@ -18,6 +18,11 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 | Structured generation / JSON | Videogen | `clients/llm.py`, `generators/script.py` | No license | REFERENCE_ONLY | `newsvid_brain.models`, `service.py` | JSON-only prompt and fenced-output behavior were reviewed. Phase 2 uses Ollama JSON Schema, strict Pydantic validation, and deliberately rejects fences/ambiguous output. |
 | Transient LLM retry | Videogen / newsvid | `retry.py`; `download.py` | No license | REFERENCE_ONLY | `OllamaProvider` | The retryable status set and bounded backoff concept were independently implemented; invalid JSON/schema errors are never retried. |
 | Grounded fact extraction | No complete upstream implementation | — | — | WRITE_NEW | `newsvid_brain.service`, `newsvid.facts` | Required exact evidence grounding, deterministic IDs, source metadata, checkpoint/cache integration and safe failure were absent upstream. |
+| Script prompt and factual adaptation | Videogen | `generators/script.py` (`CONTENT_SYSTEM_PROMPT`, `generate_script_from_content`) | No license | REFERENCE_ONLY | `newsvid_brain.script_prompts` | Faithful article adaptation and JSON-only prompt concepts were reviewed; no source copied. Phase 3 prompts consume facts rather than raw articles. |
+| Vietnamese news structure | Auto-Create-Video | `render/script-schema.ts`, `pipeline.ts`, Vietnamese SFX fixtures | MIT | ADAPT | `script_models.py`, `script_service.py` | Adapted the licensed hook/body/outro boundary and per-segment narration concept to a provider-neutral Python schema with mandatory fact references. |
+| Duration and short pacing | Videogen / newsvid | `processors/content_chunker.py`, `types.py` (`WPM`); `tts.py` duration estimates | No license | REFERENCE_ONLY | `script_prompts.py`, `script_service.py` | Independently implemented a 150 WPM target, 30–90 second bounds, default 60 seconds, and a 20% acceptance window. |
+| News narration styles | No complete upstream implementation | newsvid generic anchor prompt only | No license | WRITE_NEW | `NewsStyle`, `STYLE_GUIDANCE` | Five factual Vietnamese style profiles and grounded constraints were required but absent upstream. |
+| Fact-reference integrity | No upstream implementation found | — | — | WRITE_NEW | `ScriptGenerator`, `ScriptCoordinator` | Deterministic segment IDs, required references on every segment, unresolved-reference rejection, checkpoint/cache integration and atomic `script.json` persistence are project-specific requirements. |
 | TTS | Videogen / Auto-Create-Video / newsvid | `clients/tts.py`; `src/tts/*`; `tts.py` | No license / MIT / No license | REFERENCE_ONLY | Phase 5 | Actual provider integration is outside Phase 0. |
 | STT/alignment | Videogen | `clients/stt.py` | No license | REFERENCE_ONLY | Phase 6 | Word timestamps mapped; no source copied. |
 | Subtitles | Videogen | `generators/subtitles.py`, `processors/subtitle_qa.py` | No license | REFERENCE_ONLY | Phase 6 | ASS/karaoke and QA concepts mapped only. |
@@ -44,5 +49,6 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 - Phase 1 Playwright article adapter: inspected browser code renders video or Studio previews; it does not safely fetch JS-dependent articles into the project's ingestion interface.
 - Phase 2 provider boundary: upstream implementations call one backend directly and expose no project-neutral structured provider contract.
 - Phase 2 facts schema/grounding: neither upstream validates evidence against `article.md`, assigns deterministic fact IDs, or persists a source-aware `facts.json` checkpoint safely.
+- Phase 3 script validation: no inspected source validates narration references against a grounded fact manifest or rejects non-Vietnamese and off-duration structured output before persistence.
 
 No upstream tests were copied verbatim. Videogen's article parser tests informed independently written fixture, noise-removal, section and fallback assertions.

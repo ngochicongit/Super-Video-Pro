@@ -25,4 +25,10 @@ The coordinator atomically writes `source.json`, `article.md` and `images.json`,
 
 `LLMProvider` keeps fact extraction independent of a particular model service. `OllamaProvider` implements Ollama's native `/api/chat` structured-output contract with bounded transient retries; malformed JSON and schema violations fail immediately.
 
-`FactsCoordinator` reads only the persisted Phase 1 source and article, requests candidate facts, validates strict Pydantic schemas, checks every evidence quote against normalized `article.md`, and assigns deterministic IDs locally. It atomically writes `facts.json` and fingerprints article, source, prompt version, and provider configuration for safe cache reuse. Script generation remains absent until Phase 3.
+`FactsCoordinator` reads only the persisted Phase 1 source and article, requests candidate facts, validates strict Pydantic schemas, checks every evidence quote against normalized `article.md`, and assigns deterministic IDs locally. It atomically writes `facts.json` and fingerprints article, source, prompt version, and provider configuration for safe cache reuse.
+
+## Phase 3 Vietnamese news script
+
+`ScriptGenerator` consumes only validated `facts.json` through the existing `LLMProvider`. Its structured prompt targets Vietnamese narration at 150 words per minute, defaults to 60 seconds, accepts 30–90 seconds, and supplies dedicated guidance for five news styles.
+
+The generator assigns segment IDs locally, requires the first segment to be a grounded hook and the last to be an outro, rejects unresolved `fact_refs`, checks Vietnamese output, and enforces a 20% duration window. `ScriptCoordinator` fingerprints facts, prompt version, provider configuration, style, and duration before atomically writing `script.json`. No `storyboard.json` model or implementation exists in Phase 3.
