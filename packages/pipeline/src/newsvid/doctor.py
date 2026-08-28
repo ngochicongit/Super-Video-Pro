@@ -66,6 +66,6 @@ def collect_status(config: AppConfig) -> list[DependencyStatus]:
         _port("ComfyUI", config.services.comfyui_url),
         _command("piper", ["--version"]),
         _port("F5-TTS", config.services.f5tts_url),
-        DependencyStatus("WhisperX", "OK" if importlib.util.find_spec("whisperx") else "OPTIONAL/OFFLINE", "Python package"),
+        _port("WhisperX", config.services.whisperx_url),
     ]
     return checks

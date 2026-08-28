@@ -11,13 +11,15 @@ from .project import ProjectManager
 from .schemas import PipelineStage, StageStatus
 from .ingestion import IngestionCoordinator
 from newsvid_ingest.errors import ArticleExtractionError
-from newsvid_brain import (F5TTSConfig, F5TTSProvider, LLMError, NewsStyle,
+from newsvid_brain import (AlignmentError, F5TTSConfig, F5TTSProvider, LLMError, NewsStyle,
                            OllamaConfig, OllamaProvider, PiperConfig, PiperProvider,
-                           TTSError, load_pronunciation)
+                           SubtitleLayout, TTSError, WhisperXConfig, WhisperXProvider,
+                           load_pronunciation)
 from .facts import FactsCoordinator
 from .scripts import ScriptCoordinator
 from .storyboards import StoryboardCoordinator
 from .tts import TTSCoordinator
+from .alignment import AlignmentCoordinator
 
 
 def _print_model(model: object) -> None:
@@ -50,6 +52,8 @@ def _parser() -> argparse.ArgumentParser:
     tts.add_argument("project_id")
     tts.add_argument("--provider", choices=["piper", "f5tts"])
     tts.add_argument("--voice")
+    align = commands.add_parser("align", help="Align Vietnamese narration and generate ASS subtitles")
+    align.add_argument("project_id")
     project = commands.add_parser("project", help="Manage Phase 0 projects")
     project_commands = project.add_subparsers(dest="project_command", required=True)
     create = project_commands.add_parser("create", help="Create a project")
@@ -153,6 +157,25 @@ def main(argv: list[str] | None = None) -> int:
             print(f"TTS ERROR: {exc}")
             return 2
         _print_model(result)
+        return 0
+    if args.command == "align":
+        provider = WhisperXProvider(WhisperXConfig(
+            base_url=config.services.whisperx_url,
+            model=config.services.whisperx_model,
+            timeout_seconds=config.services.whisperx_timeout_seconds,
+        ))
+        layout = SubtitleLayout(
+            top_safe_px=config.services.subtitle_top_safe_px,
+            bottom_safe_px=config.services.subtitle_bottom_safe_px,
+            max_words_per_line=config.services.subtitle_max_words_per_line,
+        )
+        try:
+            words, report = AlignmentCoordinator(manager, provider, layout).generate(args.project_id)
+        except (AlignmentError, OSError, ValueError) as exc:
+            print(f"ALIGNMENT ERROR: {exc}")
+            return 2
+        _print_model(words)
+        print(json.dumps(report.model_dump(mode="json"), ensure_ascii=True, indent=2))
         return 0
     if args.command == "project" and args.project_command == "create":
         project = manager.create(args.name)

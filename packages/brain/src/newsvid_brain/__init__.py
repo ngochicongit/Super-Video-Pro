@@ -1,4 +1,7 @@
-from .errors import GroundingError, LLMError, SchemaValidationError, StructuredOutputError, TTSError
+from .errors import AlignmentError, GroundingError, LLMError, SchemaValidationError, StructuredOutputError, TTSError
+from .alignment_models import SceneAlignment, SubtitleLayout, SubtitleReport, WordTiming, WordsDocument
+from .alignment_providers import AlignmentProvider, WhisperXConfig, WhisperXProvider
+from .subtitles import generate_ass
 from .models import Fact, FactSet, FactSource
 from .providers import LLMProvider, OllamaConfig, OllamaProvider
 from .service import FactExtractor
@@ -11,4 +14,4 @@ from .normalize_vi import PronunciationConfig, load_pronunciation, normalize_vi
 from .tts_models import AudioCacheEntry, TTSManifest
 from .tts_providers import F5TTSConfig, F5TTSProvider, PiperConfig, PiperProvider, TTSProvider
 
-__all__ = ["AudioCacheEntry", "F5TTSConfig", "F5TTSProvider", "Fact", "FactExtractor", "FactSet", "FactSource", "GroundingError", "LLMError", "LLMProvider", "NewsScript", "NewsStyle", "OllamaConfig", "OllamaProvider", "PiperConfig", "PiperProvider", "PronunciationConfig", "RoutingContext", "SceneType", "SchemaValidationError", "ScriptGenerator", "ScriptSegment", "SegmentType", "SourceType", "Storyboard", "StoryboardBuilder", "StoryboardScene", "StructuredOutputError", "TTSManifest", "TTSProvider", "TTSError", "VisualPlan", "VisualProvenance", "VisualRouter", "load_pronunciation", "normalize_vi"]
+__all__ = ["AlignmentError", "AlignmentProvider", "AudioCacheEntry", "F5TTSConfig", "F5TTSProvider", "Fact", "FactExtractor", "FactSet", "FactSource", "GroundingError", "LLMError", "LLMProvider", "NewsScript", "NewsStyle", "OllamaConfig", "OllamaProvider", "PiperConfig", "PiperProvider", "PronunciationConfig", "RoutingContext", "SceneAlignment", "SceneType", "SchemaValidationError", "ScriptGenerator", "ScriptSegment", "SegmentType", "SourceType", "Storyboard", "StoryboardBuilder", "StoryboardScene", "StructuredOutputError", "SubtitleLayout", "SubtitleReport", "TTSManifest", "TTSProvider", "TTSError", "VisualPlan", "VisualProvenance", "VisualRouter", "WhisperXConfig", "WhisperXProvider", "WordTiming", "WordsDocument", "generate_ass", "load_pronunciation", "normalize_vi"]

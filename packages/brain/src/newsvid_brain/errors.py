@@ -16,3 +16,7 @@ class GroundingError(StructuredOutputError):
 
 class TTSError(RuntimeError):
     """Vietnamese speech synthesis or WAV validation failed."""
+
+
+class AlignmentError(RuntimeError):
+    """Word alignment or subtitle generation failed safely."""

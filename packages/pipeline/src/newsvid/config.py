@@ -23,6 +23,12 @@ class ServiceConfig(BaseModel):
     piper_executable: str = "piper"
     piper_model_path: Path = Path("models/piper/vi_VN-vais1000-medium.onnx")
     f5tts_url: str = "http://127.0.0.1:7860"
+    whisperx_url: str = "http://127.0.0.1:8000"
+    whisperx_model: str = "large-v3"
+    whisperx_timeout_seconds: float = Field(default=300, gt=0)
+    subtitle_top_safe_px: int = Field(default=180, ge=0)
+    subtitle_bottom_safe_px: int = Field(default=300, ge=0)
+    subtitle_max_words_per_line: int = Field(default=7, ge=1, le=12)
 
 
 class AppConfig(BaseModel):

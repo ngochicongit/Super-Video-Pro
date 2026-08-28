@@ -1,4 +1,4 @@
-# Upstream reuse audit — Phases 0–5
+# Upstream reuse audit — Phases 0–6
 
 Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and are read-only references. Runtime code does not import from them.
 
@@ -26,8 +26,8 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 | TTS abstraction / narration | Videogen / Auto-Create-Video / newsvid | `clients/tts.py`, orchestrator; `src/tts/tts-client.ts`, `pipeline.ts`; `tts.py` | No license / MIT / No license | ADAPT | `TTSProvider`, `PiperProvider`, `F5TTSProvider`, `TTSCoordinator` | Adapted the licensed swappable-client boundary and per-scene narration flow; independently implemented local Piper and isolated F5 adapters because upstream providers differ. |
 | Vietnamese normalization | No complete upstream implementation | Auto-Create-Video Vietnamese narration fixtures only | Mixed | WRITE_NEW | `normalize_vi.py`, `config/pronunciation_vi.yaml` | Numbers, dates, years, percentages, currencies, units and technology pronunciation required a deterministic external dictionary not found upstream. |
 | WAV validation / atomic audio | Videogen / Auto-Create-Video | direct response/file writes | Mixed | EXTEND | `tts_providers.py`, `tts.py` | Adds standard-library WAV validation, atomic replacement, audio hashing and corruption-triggered regeneration before cache acceptance. |
-| STT/alignment | Videogen | `clients/stt.py` | No license | REFERENCE_ONLY | Phase 6 | Word timestamps mapped; no source copied. |
-| Subtitles | Videogen | `generators/subtitles.py`, `processors/subtitle_qa.py` | No license | REFERENCE_ONLY | Phase 6 | ASS/karaoke and QA concepts mapped only. |
+| STT/alignment | Videogen | `clients/stt.py`, orchestrator stage 5, `types.py` (`WordTimestamp`) | No license | ADAPT (behavior), no source copied | `AlignmentProvider`, `WhisperXProvider`, `AlignmentCoordinator`, `words.json` | Aggressively adapted the OpenAI-style multipart request, Vietnamese language selection, word timestamps and per-scene offset flow behind a strict local WhisperX boundary. |
+| Subtitles | Videogen | `generators/subtitles.py`, `tests/test_subtitles.py`, `processors/subtitle_qa.py` | No license | ADAPT (behavior), no source copied | `subtitles.py`, `SubtitleLayout`, `subtitle_report.json` | Adapted ASS timing, punctuation grouping, scene offsets and `\k` karaoke behavior; extended with adaptive sizing, safe areas, Vietnamese preservation and overflow rejection. |
 | FFmpeg / Ken Burns / transitions | Videogen | `assembler/encoder.py`, `compositor.py`, `ken_burns.py`, `transitions.py` | No license | REFERENCE_ONLY | Phases 7/10 | Current Electron app already centralizes tool execution; no premature Python renderer. |
 | ComfyUI | Videogen | `clients/comfyui.py` | No license | REFERENCE_ONLY | Phase 9 | Workflow/API lifecycle mapped; no adapter created. |
 | HyperFrames / GSAP / motion templates | Auto-Create-Video | `render/hyperframes-runner.ts`, `html-composer.ts`, `templates/*` | MIT | REFERENCE_ONLY | Phase 8 | Suitable implementation exists, but integrating it now would violate Phase 0 and no-placeholder rules. |
@@ -59,5 +59,7 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 - Phase 4 VisualRouter: no inspected implementation covers every required routing rule or guarantees that real people/events avoid generated likenesses.
 - Phase 5 providers: upstream TTS clients target GPU gateways or hosted APIs, not the required local Piper and isolated optional F5-TTS interfaces.
 - Phase 5 normalization/cache: no upstream combines external Vietnamese pronunciation rules with content/config fingerprints and validated WAV hashes.
+- Phase 6 alignment persistence: upstream stores words inside mutable scene/checkpoint objects; the required strict, cache-fingerprinted standalone `words.json` and failure-safe coordinator were absent.
+- Phase 6 layout validation: upstream uses a fixed font/margin and four-word chunks, with no top/bottom safe-area calculation, adaptive size, two-line limit or overflow rejection.
 
-No upstream tests were copied verbatim. Videogen's article parser tests informed independently written fixture, noise-removal, section and fallback assertions.
+No upstream tests were copied verbatim. Phase 6 ports the observable assertions from Videogen's subtitle tests—ASS timestamps, offsets, karaoke tags, punctuation grouping and monotonic scene merging—into independently written tests for the new schemas and Vietnamese pipeline.

@@ -13,8 +13,8 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Vietnamese news script | Videogen `generators/script.py`, `processors/content_chunker.py`; Auto-Create-Video `render/script-schema.ts`, `pipeline.ts`; newsvid `generate_script` and TTS word-duration estimates | `CandidateScript`, `NewsScript`, `ScriptGenerator`, `ScriptCoordinator` | 3 |
 | TTS | Videogen `clients/tts.py`, orchestrator/checkpoint; Auto-Create-Video `src/tts/*`, `pipeline.ts`; newsvid `tts.py` | `TTSProvider`, `PiperProvider`, `F5TTSProvider`, `TTSCoordinator` | 5 |
 | Vietnamese pronunciation / audio cache | Auto-Create-Video narration/voice config and file reuse; no complete upstream normalizer | `normalize_vi`, external pronunciation YAML, `TTSManifest` | 5 |
-| STT/alignment | Videogen `clients/stt.py` | Future alignment provider | 6 |
-| Subtitles | Videogen `generators/subtitles.py`, `processors/subtitle_qa.py` | Future subtitle package | 6 |
+| STT/alignment | Videogen `clients/stt.py`, `pipeline/orchestrator.py` stage 5, `types.py` | `AlignmentProvider`, loopback `WhisperXProvider`, `AlignmentCoordinator`, `WordsDocument` | 6 |
+| Subtitles | Videogen `generators/subtitles.py`, `tests/test_subtitles.py`, `processors/subtitle_qa.py` | `generate_ass`, `SubtitleLayout`, safe-area/overflow report | 6 |
 | FFmpeg | Videogen `assembler/*`; newsvid `vid.py`; current `src/main/tools.ts` and `composition-ffmpeg.ts` | Future centralized Python executor, existing Electron executor remains | 7/10 |
 | Ken Burns | Videogen `assembler/ken_burns.py`; Auto-Create-Video `html-composer.ts` | Future static visual renderer | 7 |
 | HyperFrames/GSAP | Auto-Create-Video `hyperframes-runner.ts`, `templates/animations.js`; html-video `adapter-hyperframes` | Future `HTMLRenderer` adapter | 8 |
@@ -30,4 +30,4 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Metadata/images | OpenGraph/JSON-LD and DOM patterns inspected across the three sources; no complete implementation | `Source`, `ArticleImage`, `ImageManifest` | 1 |
 | Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
-Phases 0–5 intentionally create no STT, alignment, subtitles, renderer, template asset, agent or Studio module. F5-TTS remains an optional adapter to an isolated local service.
+Phases 0–6 intentionally create no complete video renderer, visual asset generator, template runtime, agent or Studio module. WhisperX and F5-TTS remain optional adapters to isolated loopback services.

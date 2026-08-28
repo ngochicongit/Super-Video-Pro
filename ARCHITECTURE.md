@@ -48,3 +48,11 @@ Every scene retains its script segment ID, narration, duration and exact `fact_r
 `normalize_vi.py` deterministically expands numbers, dates, years and percentages. Editable acronym, currency, unit and project-specific pronunciation rules live in `config/pronunciation_vi.yaml`, which is also packaged into the wheel as a fallback resource.
 
 `TTSCoordinator` generates one `audio/scene_NNN.wav` per storyboard scene and records `audio/tts_manifest.json`. Each cache fingerprint includes original and normalized narration, voice, provider identity/configuration and pronunciation rules. Cache hits require a valid WAV whose SHA-256 still matches the manifest; changed or corrupted scenes regenerate independently. No timestamp, alignment, caption or subtitle artifact is produced in Phase 5.
+
+## Phase 6 alignment and subtitles
+
+`AlignmentProvider` isolates timestamp extraction. `WhisperXProvider` sends WAV, normalized transcript and `language=vi` to an OpenAI-compatible alignment endpoint restricted to loopback. Strict `WordTiming` and `SceneAlignment` models reject empty, reversed, overlapping or out-of-audio timestamps before `words.json` is persisted.
+
+`AlignmentCoordinator` derives scene offsets from the validated TTS manifest, fingerprints storyboard/audio/provider/layout inputs, and updates the existing ALIGNMENT checkpoint. A matching complete checkpoint safely reuses `words.json`, ASS and its layout report.
+
+The ASS generator adapts Videogen's punctuation grouping, timestamp formatting and word-level `\k` karaoke model. It adds Vietnamese-safe UTF-8 output, ASS escaping, approximately seven words per caption group, up to two display lines, adaptive font sizing, default 180 px top and 300 px bottom safe areas, and explicit overflow rejection. Phase 6 produces no video frames and does not burn subtitles into video.

@@ -37,9 +37,9 @@ pnpm package
 
 The NSIS installer is emitted under `release/`.
 
-## AI News Video — Phases 0–5
+## AI News Video — Phases 0–6
 
-The Python foundation is isolated from the Electron renderer and exposes project/checkpoint management, article ingestion, grounded facts, Vietnamese scripts, an editable visual storyboard, and cached Vietnamese WAV narration. It intentionally does not create alignment, subtitles or video yet.
+The Python foundation is isolated from the Electron renderer and exposes project/checkpoint management, article ingestion, grounded facts, Vietnamese scripts, an editable visual storyboard, cached Vietnamese WAV narration, word alignment and karaoke ASS subtitles. It intentionally does not render the complete video yet.
 
 ```powershell
 python -m venv .venv
@@ -97,6 +97,14 @@ The default is a 60-second `breaking-news` script. Durations from 30–90 second
 Piper is the default fast local provider and requires the configured Vietnamese ONNX model. F5-TTS is optional and accessed only through the configured isolated local HTTP service. Each scene produces `audio/scene_NNN.wav`; unchanged normalized narration, voice and provider configuration reuse the validated deterministic cache.
 
 Pronunciation rules are editable in `config/pronunciation_vi.yaml`. They cover technology acronyms, currencies and units while `normalize_vi.py` handles numbers, dates, years and percentages.
+
+### Word alignment and subtitles
+
+```powershell
+.\.venv\Scripts\newsvid align <project-id>
+```
+
+The command sends each validated scene WAV and normalized Vietnamese narration to the configured loopback WhisperX alignment service. It writes strict project-level `words.json`, `captions/subtitles.ass`, and `captions/subtitle_report.json`. Karaoke highlights follow word timings; captions prefer at most seven words per displayed group, adapt font size, preserve a 180 px top and 300 px bottom safe area, and fail instead of emitting overflowing captions.
 
 ## Security boundary
 
