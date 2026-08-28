@@ -40,3 +40,5 @@ Phase 11: selective_regeneration.py adapts Videogen checkpoint/cache dependency 
 Phase 12: validation/render inspection concepts from Videogen and html-video inform `QACoordinator`; output is persisted as `qa.json`.
 
 Phase 13: html-video `runtime` and `content-graph` inform `discover_agents`, controlled storyboard editing, and deterministic project tool boundaries.
+
+Phase 14: html-video Studio iteration workflow informs `BoundedAutonomousEditor` and its per-scene edit history.

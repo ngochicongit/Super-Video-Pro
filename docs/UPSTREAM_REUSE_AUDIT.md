@@ -84,3 +84,5 @@ Phase 11: Videogen checkpoint/cache dependency concepts are adapted through sele
 Phase 12: upstream validation and render-check utilities were inspected; QA is implemented as a project-specific coordinator because the required grounded fact, caption safe-area, provenance, and scene checks are not exposed as one compatible upstream interface.
 
 Phase 13: html-video runtime agent discovery, PATH probing, content-graph stable IDs, and Studio frame-edit boundaries were inspected and adapted behind `agent_tools.py`; process execution remains explicit and no shell command is accepted from agent input.
+
+Phase 14: html-video Studio iteration and render loop were reviewed; bounded inspect/edit/validate/preview/QA sequencing is adapted in `autonomous_editor.py` with a hard three-revision limit.
