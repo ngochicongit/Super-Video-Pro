@@ -14,6 +14,7 @@ from newsvid_ingest.errors import ArticleExtractionError
 from newsvid_brain import LLMError, NewsStyle, OllamaConfig, OllamaProvider
 from .facts import FactsCoordinator
 from .scripts import ScriptCoordinator
+from .storyboards import StoryboardCoordinator
 
 
 def _print_model(model: object) -> None:
@@ -40,6 +41,8 @@ def _parser() -> argparse.ArgumentParser:
     script.add_argument("--duration", type=int, default=60, choices=range(30, 91), metavar="30-90")
     script.add_argument("--style", choices=[style.value for style in NewsStyle],
                         default=NewsStyle.BREAKING_NEWS.value)
+    storyboard = commands.add_parser("storyboard", help="Build the editable visual storyboard")
+    storyboard.add_argument("project_id")
     project = commands.add_parser("project", help="Manage Phase 0 projects")
     project_commands = project.add_subparsers(dest="project_command", required=True)
     create = project_commands.add_parser("create", help="Create a project")
@@ -108,6 +111,14 @@ def main(argv: list[str] | None = None) -> int:
             )
         except (LLMError, OSError, ValueError) as exc:
             print(f"SCRIPT ERROR: {exc}")
+            return 2
+        _print_model(result)
+        return 0
+    if args.command == "storyboard":
+        try:
+            result = StoryboardCoordinator(manager).build(args.project_id)
+        except (LLMError, OSError, ValueError) as exc:
+            print(f"STORYBOARD ERROR: {exc}")
             return 2
         _print_model(result)
         return 0

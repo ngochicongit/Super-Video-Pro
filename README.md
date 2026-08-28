@@ -37,9 +37,9 @@ pnpm package
 
 The NSIS installer is emitted under `release/`.
 
-## AI News Video — Phases 0–3
+## AI News Video — Phases 0–4
 
-The Python foundation is isolated from the Electron renderer and exposes project/checkpoint management, article ingestion, grounded facts, and Vietnamese news-script generation. It intentionally does not generate a storyboard or video yet.
+The Python foundation is isolated from the Electron renderer and exposes project/checkpoint management, article ingestion, grounded facts, Vietnamese scripts, and an editable visual storyboard. It intentionally does not generate speech or video yet.
 
 ```powershell
 python -m venv .venv
@@ -78,6 +78,14 @@ The command creates schema-validated `facts.json`. Each fact has a deterministic
 ```
 
 The default is a 60-second `breaking-news` script. Durations from 30–90 seconds and the styles `breaking-news`, `tech-news`, `finance-news`, `explainer`, and `documentary` are supported. Every segment must resolve its `fact_refs` against `facts.json` before `script.json` is written.
+
+### Storyboard and visual routing
+
+```powershell
+.\.venv\Scripts\newsvid storyboard <project-id>
+```
+
+`storyboard.json` is the sole editing source of truth. It preserves narration, timing and `fact_refs`, and records a template plus visual provenance for every scene. The deterministic router uses article imagery for real people/events, graphics for numbers and chronology, screenshots for software/source fallback, and generated illustration only for abstract concepts.
 
 ## Security boundary
 

@@ -31,4 +31,12 @@ The coordinator atomically writes `source.json`, `article.md` and `images.json`,
 
 `ScriptGenerator` consumes only validated `facts.json` through the existing `LLMProvider`. Its structured prompt targets Vietnamese narration at 150 words per minute, defaults to 60 seconds, accepts 30–90 seconds, and supplies dedicated guidance for five news styles.
 
-The generator assigns segment IDs locally, requires the first segment to be a grounded hook and the last to be an outro, rejects unresolved `fact_refs`, checks Vietnamese output, and enforces a 20% duration window. `ScriptCoordinator` fingerprints facts, prompt version, provider configuration, style, and duration before atomically writing `script.json`. No `storyboard.json` model or implementation exists in Phase 3.
+The generator assigns segment IDs locally, requires the first segment to be a grounded hook and the last to be an outro, rejects unresolved `fact_refs`, checks Vietnamese output, and enforces a 20% duration window. `ScriptCoordinator` fingerprints facts, prompt version, provider configuration, style, and duration before atomically writing `script.json`.
+
+## Phase 4 storyboard and VisualRouter
+
+`storyboard.json` is the only editing source of truth. The design adapts html-video's stable graph-node/frame IDs, 1:1 multi-frame representation, explicit duration and validate-before-write behavior into one ordered, news-specific scene list. A separate `content-graph.json` is deliberately not created because two editable representations could diverge.
+
+Every scene retains its script segment ID, narration, duration and exact `fact_refs`. `VisualProvenance` distinguishes article, generated, stock, user, graphic and screenshot media and validates the fields required by each source type.
+
+`VisualRouter` makes deterministic decisions from referenced facts and narration: hook → kinetic text; real person/event → article image or source screenshot; numbers → stat/chart/comparison; chronology → timeline; location → map; software/website → screenshot; abstract concept → ComfyUI illustration plan; outro → closing graphic. This phase selects plans and template IDs only—it does not render visuals or implement TTS.

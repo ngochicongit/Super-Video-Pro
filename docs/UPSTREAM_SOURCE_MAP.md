@@ -19,8 +19,9 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | HyperFrames/GSAP | Auto-Create-Video `hyperframes-runner.ts`, `templates/animations.js`; html-video `adapter-hyperframes` | Future `HTMLRenderer` adapter | 8 |
 | Chromium renderer | html-video engine adapters/CLI export path | Future scene renderer | 8 |
 | ComfyUI | Videogen `clients/comfyui.py`, `docs/workflows/*` | Future `ComfyUIProvider` | 9 |
-| Templates | Auto-Create-Video `render/templates/*`; html-video `templates/*` and metadata YAML | Future template registry | 8 |
-| Content graph | html-video `content-graph/src/index.ts`, `core/src/project.ts` | Future storyboard schema/adapter | 4 |
+| Templates | Auto-Create-Video `render/script-schema.ts`, samples and templates; html-video template metadata YAML | Phase 4 template IDs in `VisualRouter`; renderer registry remains future | 4 mapping / 8 rendering |
+| Content graph / frames | html-video `content-graph/src/index.ts`, `core/src/project.ts`, `core/src/types/index.ts` | `Storyboard`, `StoryboardScene`, ordered scene/frame model | 4 |
+| Scene and visual routing | Auto-Create-Video scene schema; Videogen `entity_extractor.py`, `types.py` | `SceneType`, `VisualPlan`, `VisualProvenance`, `VisualRouter` | 4 |
 | Agents/Codex/Cursor | html-video `runtime/src/detect.ts`, `spawn.ts`, `defs/*` | Future agent adapter | 13 |
 | Studio | html-video `project-studio/public/index.html`, `studio-server.ts` | Future Electron tab consuming the same backend pipeline | 16 integration |
 | URL security/static fetch | html-video `cli/src/fetch-source.ts` | `StaticFetcher`, `assert_public_http_url` | 1 |
@@ -28,4 +29,4 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Metadata/images | OpenGraph/JSON-LD and DOM patterns inspected across the three sources; no complete implementation | `Source`, `ArticleImage`, `ImageManifest` | 1 |
 | Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
-Phases 0–3 intentionally create no storyboard, TTS, STT, renderer, template, agent, content-graph or Studio module. Phase 3 adds only FACTS → Vietnamese `script.json` generation.
+Phases 0–4 intentionally create no TTS, STT, renderer, template asset, agent or Studio module. Phase 4 persists only `storyboard.json`; it does not persist a second content graph.

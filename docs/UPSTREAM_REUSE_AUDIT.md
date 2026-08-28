@@ -1,4 +1,4 @@
-# Upstream reuse audit — Phases 0–3
+# Upstream reuse audit — Phases 0–4
 
 Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and are read-only references. Runtime code does not import from them.
 
@@ -30,7 +30,10 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 | ComfyUI | Videogen | `clients/comfyui.py` | No license | REFERENCE_ONLY | Phase 9 | Workflow/API lifecycle mapped; no adapter created. |
 | HyperFrames / GSAP / motion templates | Auto-Create-Video | `render/hyperframes-runner.ts`, `html-composer.ts`, `templates/*` | MIT | REFERENCE_ONLY | Phase 8 | Suitable implementation exists, but integrating it now would violate Phase 0 and no-placeholder rules. |
 | Chromium renderer / templates | html-video | `packages/adapter-hyperframes`, `packages/adapter-remotion`, `templates/*` | Apache-2.0 plus template attributions | REFERENCE_ONLY | Phase 8 | Engine and provenance interfaces mapped for later inspection. |
-| Content graph | html-video | `packages/content-graph/src/index.ts` | Apache-2.0 | REFERENCE_ONLY | Phase 4 | Storyboard concepts must not be implemented before Phase 4. |
+| Content graph / multi-frame | html-video | `packages/content-graph/src/index.ts`; `core/src/project.ts`; `core/src/types/index.ts` (`FrameRecord`) | Apache-2.0 | ADAPT | `storyboard_models.py`, `StoryboardBuilder` | Adapted stable node/frame IDs, ordered 1:1 frames, explicit duration and pre-persistence validation. No parallel content graph is persisted. |
+| Phase 4 template routing | Auto-Create-Video / html-video | `render/script-schema.ts`, sample scripts; `templates/*/template.html-video.yaml` | MIT / Apache-2.0 plus template notices | ADAPT | `SceneType`, `VisualRouter` | Reuses licensed scene semantics and metadata-driven template IDs without copying renderer code or template assets. |
+| Entity/media routing | Videogen | `processors/entity_extractor.py`, `types.py` (`EntityType`, `ImageRouting`, `Scene`) | No license | REFERENCE_ONLY | `VisualRouter` | Person/place versus conceptual imagery behavior was reviewed; the independent router adds events, numbers, chronology, maps, screenshots and provenance. |
+| Storyboard/provenance integrity | No complete upstream implementation | — | — | WRITE_NEW | `Storyboard`, `VisualProvenance`, `StoryboardCoordinator` | Fact propagation, source-type validation, editable source-of-truth semantics and checkpoint/cache integration were not available together upstream. |
 | Codex / Cursor / agents | html-video | `packages/runtime/src/detect.ts`, `spawn.ts`, `defs/codex.ts`, `defs/cursor-agent.ts` | Apache-2.0 | REFERENCE_ONLY | Phase 13 | Agent detection/execution is mapped, not copied early. |
 | Studio | html-video | `packages/project-studio/public/index.html`, `packages/cli/src/studio-server.ts` | Apache-2.0 | REFERENCE_ONLY | Phase 16 | UI is explicitly out of Phase 0; the Electron tab is therefore not added yet. |
 | Public URL validation/fetch | html-video | `packages/cli/src/fetch-source.ts` | Apache-2.0 | ADAPT | `packages/article_ingest/src/newsvid_ingest/security.py`, `fetchers.py` | Adapted protocol/private-host guard, bounded redirects, timeout and browser-like user agent; extended with DNS classification, response size/type bounds and redirect revalidation. |
@@ -50,5 +53,7 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 - Phase 2 provider boundary: upstream implementations call one backend directly and expose no project-neutral structured provider contract.
 - Phase 2 facts schema/grounding: neither upstream validates evidence against `article.md`, assigns deterministic fact IDs, or persists a source-aware `facts.json` checkpoint safely.
 - Phase 3 script validation: no inspected source validates narration references against a grounded fact manifest or rejects non-Vietnamese and off-duration structured output before persistence.
+- Phase 4 storyboard: html-video provides a general graph, but the master plan needs one factual news-specific editable artifact, not a second competing graph.
+- Phase 4 VisualRouter: no inspected implementation covers every required routing rule or guarantees that real people/events avoid generated likenesses.
 
 No upstream tests were copied verbatim. Videogen's article parser tests informed independently written fixture, noise-removal, section and fallback assertions.
