@@ -21,3 +21,5 @@ The editing source of truth is `projects/<id>/storyboard.json` once Phase 4 crea
 - Preview before final rendering and validate after modifications.
 - Search the current repository and audited upstream sources before implementing a subsystem; follow `REUSE → ADAPT → EXTEND → WRITE NEW`.
 - Never modify `.upstream/` or depend on it at runtime.
+
+Phase 13 agent integrations use `newsvid.agent_tools` deterministic boundaries for Codex/Cursor discovery, project inspection, storyboard edits, validation, and rendering. Unrelated scene caches must be preserved.

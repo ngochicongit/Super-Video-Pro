@@ -38,3 +38,5 @@ Phase 10 removes the former article-specific final coordinator. Image, motion an
 Phase 11: selective_regeneration.py adapts Videogen checkpoint/cache dependency concepts behind a project-neutral invalidation planner.
 
 Phase 12: validation/render inspection concepts from Videogen and html-video inform `QACoordinator`; output is persisted as `qa.json`.
+
+Phase 13: html-video `runtime` and `content-graph` inform `discover_agents`, controlled storyboard editing, and deterministic project tool boundaries.
