@@ -16,6 +16,10 @@ class ServiceConfig(BaseModel):
     ollama_timeout_seconds: float = Field(default=120, gt=0)
     ollama_max_attempts: int = Field(default=3, ge=1, le=5)
     comfyui_url: str = "http://127.0.0.1:8188"
+    comfyui_checkpoint: str = "sd_xl_base_1.0.safetensors"
+    comfyui_timeout_seconds: float = Field(default=300, gt=0)
+    comfyui_poll_interval_seconds: float = Field(default=2, gt=0, le=30)
+    comfyui_workflow_dir: Path = Path("workflows/comfyui")
     tts_provider: str = Field(default="piper", pattern=r"^(piper|f5tts)$")
     tts_voice: str = "vi_VN-vais1000-medium"
     tts_speed: float = Field(default=1.0, ge=0.5, le=2.0)
@@ -61,4 +65,14 @@ def load_config(path: Path | None = None) -> AppConfig:
             config.pronunciation_path = Path(str(packaged))
     if not config.services.piper_model_path.is_absolute():
         config.services.piper_model_path = (config_path.parent.parent / config.services.piper_model_path).resolve()
+    if not config.services.comfyui_workflow_dir.is_absolute():
+        config.services.comfyui_workflow_dir = (config_path.parent.parent / config.services.comfyui_workflow_dir).resolve()
+    if not config.services.comfyui_workflow_dir.is_dir():
+        packaged_workflows = files("newsvid").joinpath("data/comfyui")
+        if packaged_workflows.is_dir():
+            config.services.comfyui_workflow_dir = Path(str(packaged_workflows))
+    if os.environ.get("COMFYUI_URL"):
+        config.services.comfyui_url = os.environ["COMFYUI_URL"]
+    if os.environ.get("COMFYUI_CHECKPOINT"):
+        config.services.comfyui_checkpoint = os.environ["COMFYUI_CHECKPOINT"]
     return config

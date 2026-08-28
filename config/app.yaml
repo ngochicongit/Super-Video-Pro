@@ -8,6 +8,10 @@ services:
   ollama_timeout_seconds: 120
   ollama_max_attempts: 3
   comfyui_url: http://127.0.0.1:8188
+  comfyui_checkpoint: sd_xl_base_1.0.safetensors
+  comfyui_timeout_seconds: 300
+  comfyui_poll_interval_seconds: 2
+  comfyui_workflow_dir: workflows/comfyui
   tts_provider: piper
   tts_voice: vi_VN-vais1000-medium
   tts_speed: 1.0

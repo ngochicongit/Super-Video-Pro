@@ -37,7 +37,7 @@ pnpm package
 
 The NSIS installer is emitted under `release/`.
 
-## AI News Video — Phases 0–8
+## AI News Video — Phases 0–9
 
 The Python foundation is isolated from the Electron renderer and now supports the first complete basic article-to-video path: ingestion, grounded script/storyboard, Vietnamese WAV narration, word alignment, karaoke ASS subtitles, cached article imagery and vertical FFmpeg output without ComfyUI.
 
@@ -117,6 +117,14 @@ The Phase 7 renderer downloads only attributed entries from `images.json`, valid
 ### Motion graphics
 
 Phase 8 integrates motion graphics into the same `SceneRenderer`. Graphic scenes selected in `storyboard.json` render through an html-video-derived Playwright/Chromium recording adapter with embedded GSAP timelines; article-image scenes continue through the Phase 7 FFmpeg Ken Burns path. Supported structured templates are `hook`, `headline`, `stat-hero`, `chart`, `comparison`, `timeline`, `quote`, and `outro`. Each template supports native 1080×1920 output and is muxed with the existing scene narration before normal preview, concatenation and subtitle composition.
+
+### Optional ComfyUI visuals
+
+```powershell
+.\.venv\Scripts\newsvid visuals <project-id>
+```
+
+Phase 9 generates only storyboard scenes explicitly routed to ComfyUI, using `news-image`, `background`, or `infographic`. Generated files carry workflow/provider provenance and deterministic cache fingerprints; interrupted runs preserve completed assets and resume missing scenes. When ComfyUI is offline, the `VISUALS` checkpoint records an actionable failure while existing project JSON remains valid and unchanged. Article imagery and Phase 8 motion graphics continue to work without ComfyUI.
 
 ## Security boundary
 

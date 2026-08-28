@@ -21,7 +21,7 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | HyperFrames/GSAP | Auto-Create-Video `hyperframes-runner.ts`, `html-composer.ts`, `script-schema.ts`, template CSS/JS; html-video HyperFrames adapter | `MotionTemplateInput`, embedded GSAP templates, `HyperFramesChromiumRenderer` | 8 |
 | Chromium renderer | html-video `adapter-hyperframes/src/render.ts` and validation/capabilities; template discovery/metadata | `render-motion-scene.mjs`, Playwright Edge recording, FFmpeg encoding | 8 |
 | Motion template catalog | html-video kinetic/stat/chart/outro metadata; Auto-Create-Video Vietnamese scene layouts | hook/headline/stat/chart/comparison/timeline/quote/outro registry | 8 |
-| ComfyUI | Videogen `clients/comfyui.py`, `docs/workflows/*` | Future `ComfyUIProvider` | 9 |
+| ComfyUI | Videogen `clients/comfyui.py`, orchestrator image stage, scene checkpoint types | `ComfyUIProvider`, `HTTPComfyUIProvider`, `VisualCoordinator`, `VisualManifest` | 9 |
 | Templates | Auto-Create-Video `render/script-schema.ts`, samples and templates; html-video template metadata YAML | Phase 4 template IDs in `VisualRouter`; renderer registry remains future | 4 mapping / 8 rendering |
 | Content graph / frames | html-video `content-graph/src/index.ts`, `core/src/project.ts`, `core/src/types/index.ts` | `Storyboard`, `StoryboardScene`, ordered scene/frame model | 4 |
 | Scene and visual routing | Auto-Create-Video scene schema; Videogen `entity_extractor.py`, `types.py` | `SceneType`, `VisualPlan`, `VisualProvenance`, `VisualRouter` | 4 |
@@ -32,4 +32,4 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Metadata/images | OpenGraph/JSON-LD and DOM patterns inspected across the three sources; no complete implementation | `Source`, `ArticleImage`, `ImageManifest` | 1 |
 | Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
-Phase 8 adds the audited HyperFrames-style Chromium motion runtime and eight predefined templates. It intentionally creates no ComfyUI visual generation, free-form browser animation framework, advanced transition editor, agent or Studio module. WhisperX and F5-TTS remain optional adapters to isolated loopback services.
+Phase 9 adds optional ComfyUI visual generation through one provider boundary and the three required declarative workflows. It intentionally does not start/stop ComfyUI, add video generation, assemble Phase 10 transitions, or make `.upstream/` a runtime dependency. Storyboard remains the editing source of truth; generated paths are committed there only after the complete requested visual set succeeds.

@@ -1,6 +1,6 @@
 # Third-party notices — AI News Video
 
-Phases 0–8 were reviewed against these read-only upstream snapshots. The application has no runtime dependency on `.upstream/`.
+Phases 0–9 were reviewed against these read-only upstream snapshots. The application has no runtime dependency on `.upstream/`.
 
 ## Auto-Create-Video
 
@@ -23,7 +23,7 @@ Phases 0–8 were reviewed against these read-only upstream snapshots. The appli
 - Repository: https://github.com/Juwebien/videogen
 - Commit reviewed: `6134ccdb05a19b8c88bc6609eafe47aefee7adca`
 - License: no license file was present in the reviewed snapshot.
-- Phase 0–7 use: `REFERENCE_ONLY` at the source-license level. Phase 7 independently adapts observable image crop, Ken Burns, audio composition, concat and ASS-burn behavior because no license grant permits copying source. No source or assets were copied.
+- Phase 0–9 use: `REFERENCE_ONLY` at the source-license level. Phase 9 independently implements the provider adapter and workflows after reviewing observable ComfyUI API behavior because no license grant permits copying source. No source, workflow, model or asset was copied.
 
 ## newsvid
 
@@ -45,6 +45,8 @@ Phase 5 adds no Python dependency or copied voice/model. Piper and F5-TTS are op
 Phase 6 adds no Python dependency or copied model/font. WhisperX is an optional isolated local runtime whose package, model and licenses must be supplied separately by the operator. ASS generation is implemented locally; no Videogen source was copied.
 
 Phase 7 adds no Python dependency or copied image/media asset. It invokes the operator-installed FFmpeg/FFprobe already required by the application. Article images retain their source URLs in project provenance and remain subject to their publishers' rights and terms.
+
+Phase 9 adds no third-party package, model or copied workflow. ComfyUI and its checkpoints are optional external local components installed and licensed separately by the operator. The project communicates only through ComfyUI's local HTTP surface.
 
 ## Phase 8 JavaScript runtime dependencies
 

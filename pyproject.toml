@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-video-newsvid"
-version = "0.9.0"
+version = "0.10.0"
 description = "Local Windows foundation for fact-grounded Vietnamese news video projects"
 requires-python = ">=3.11"
 dependencies = [
@@ -38,8 +38,11 @@ packages = ["packages/pipeline/src/newsvid", "packages/article_ingest/src/newsvi
 "config/pronunciation_vi.yaml" = "newsvid_brain/data/pronunciation_vi.yaml"
 "scripts/render-motion-scene.mjs" = "newsvid/runtime/render-motion-scene.mjs"
 "node_modules/gsap/dist/gsap.min.js" = "newsvid/runtime/gsap.min.js"
+"workflows/comfyui/news-image.json" = "newsvid/data/comfyui/news-image.json"
+"workflows/comfyui/background.json" = "newsvid/data/comfyui/background.json"
+"workflows/comfyui/infographic.json" = "newsvid/data/comfyui/infographic.json"
 
 [tool.pytest.ini_options]
-testpaths = ["tests/phase0", "tests/phase1", "tests/phase2", "tests/phase3", "tests/phase4", "tests/phase5", "tests/phase6", "tests/phase7", "tests/phase8"]
+testpaths = ["tests/phase0", "tests/phase1", "tests/phase2", "tests/phase3", "tests/phase4", "tests/phase5", "tests/phase6", "tests/phase7", "tests/phase8", "tests/phase9"]
 addopts = "-q"
 markers = ["acceptance: actual local runtime acceptance test"]

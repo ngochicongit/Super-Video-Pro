@@ -22,6 +22,8 @@ from .tts import TTSCoordinator
 from .alignment import AlignmentCoordinator
 from .article_renderer import ArticleImageCache, ArticleVideoCoordinator, FFmpegArticleRenderer
 from .motion_renderer import HyperFramesChromiumRenderer, SceneRenderer
+from .comfyui import HTTPComfyUIProvider
+from .visuals import VisualCoordinator
 
 
 def _print_model(model: object) -> None:
@@ -56,6 +58,8 @@ def _parser() -> argparse.ArgumentParser:
     tts.add_argument("--voice")
     align = commands.add_parser("align", help="Align Vietnamese narration and generate ASS subtitles")
     align.add_argument("project_id")
+    visuals = commands.add_parser("visuals", help="Generate optional ComfyUI storyboard visuals")
+    visuals.add_argument("project_id")
     render = commands.add_parser("render-article", help="Render article imagery, narration and subtitles to vertical MP4")
     render.add_argument("project_id")
     project = commands.add_parser("project", help="Manage Phase 0 projects")
@@ -181,6 +185,17 @@ def main(argv: list[str] | None = None) -> int:
         _print_model(words)
         print(json.dumps(report.model_dump(mode="json"), ensure_ascii=True, indent=2))
         return 0
+    if args.command == "visuals":
+        provider = HTTPComfyUIProvider(
+            base_url=config.services.comfyui_url,
+            checkpoint=config.services.comfyui_checkpoint,
+            workflow_dir=config.services.comfyui_workflow_dir,
+            timeout_seconds=config.services.comfyui_timeout_seconds,
+            poll_interval_seconds=config.services.comfyui_poll_interval_seconds,
+        )
+        result = VisualCoordinator(manager, provider).generate(args.project_id)
+        _print_model(result)
+        return 2 if result.failures else 0
     if args.command == "render-article":
         try:
             repository_root = Path.cwd() if (Path.cwd() / "package.json").is_file() else Path(__file__).resolve().parents[4]

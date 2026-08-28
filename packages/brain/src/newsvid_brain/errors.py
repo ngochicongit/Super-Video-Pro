@@ -24,3 +24,7 @@ class AlignmentError(RuntimeError):
 
 class RenderError(RuntimeError):
     """Article-asset scene or final video rendering failed."""
+
+
+class VisualGenerationError(RuntimeError):
+    """An optional visual provider failed without invalidating project data."""
