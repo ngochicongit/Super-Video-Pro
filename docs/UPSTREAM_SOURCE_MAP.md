@@ -11,7 +11,8 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | LLM/Ollama | Videogen `clients/llm.py`, `retry.py`, `config.py`; newsvid `newsvid` (`init_ollama_client`, `verify_ollama_server`, model/prompt configuration) | `LLMProvider`, `OllamaProvider`, `OllamaConfig` | 2 |
 | Structured facts | Videogen JSON parsing/schema checks and prompt infrastructure; no upstream grounded-facts implementation | `CandidateFacts`, `FactSet`, `FactExtractor`, `FactsCoordinator` | 2 |
 | Vietnamese news script | Videogen `generators/script.py`, `processors/content_chunker.py`; Auto-Create-Video `render/script-schema.ts`, `pipeline.ts`; newsvid `generate_script` and TTS word-duration estimates | `CandidateScript`, `NewsScript`, `ScriptGenerator`, `ScriptCoordinator` | 3 |
-| TTS | Videogen `clients/tts.py`; Auto-Create-Video `src/tts/*`; newsvid `tts.py` | Future `TTSProvider` | 5 |
+| TTS | Videogen `clients/tts.py`, orchestrator/checkpoint; Auto-Create-Video `src/tts/*`, `pipeline.ts`; newsvid `tts.py` | `TTSProvider`, `PiperProvider`, `F5TTSProvider`, `TTSCoordinator` | 5 |
+| Vietnamese pronunciation / audio cache | Auto-Create-Video narration/voice config and file reuse; no complete upstream normalizer | `normalize_vi`, external pronunciation YAML, `TTSManifest` | 5 |
 | STT/alignment | Videogen `clients/stt.py` | Future alignment provider | 6 |
 | Subtitles | Videogen `generators/subtitles.py`, `processors/subtitle_qa.py` | Future subtitle package | 6 |
 | FFmpeg | Videogen `assembler/*`; newsvid `vid.py`; current `src/main/tools.ts` and `composition-ffmpeg.ts` | Future centralized Python executor, existing Electron executor remains | 7/10 |
@@ -29,4 +30,4 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Metadata/images | OpenGraph/JSON-LD and DOM patterns inspected across the three sources; no complete implementation | `Source`, `ArticleImage`, `ImageManifest` | 1 |
 | Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
-Phases 0–4 intentionally create no TTS, STT, renderer, template asset, agent or Studio module. Phase 4 persists only `storyboard.json`; it does not persist a second content graph.
+Phases 0–5 intentionally create no STT, alignment, subtitles, renderer, template asset, agent or Studio module. F5-TTS remains an optional adapter to an isolated local service.

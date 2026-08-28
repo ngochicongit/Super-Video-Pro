@@ -65,7 +65,7 @@ def collect_status(config: AppConfig) -> list[DependencyStatus]:
         _playwright(),
         _port("ComfyUI", config.services.comfyui_url),
         _command("piper", ["--version"]),
-        DependencyStatus("F5-TTS", "OK" if importlib.util.find_spec("f5_tts") else "OPTIONAL/OFFLINE", "Python package"),
+        _port("F5-TTS", config.services.f5tts_url),
         DependencyStatus("WhisperX", "OK" if importlib.util.find_spec("whisperx") else "OPTIONAL/OFFLINE", "Python package"),
     ]
     return checks

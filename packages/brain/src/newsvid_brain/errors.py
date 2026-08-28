@@ -12,3 +12,7 @@ class StructuredOutputError(SchemaValidationError):
 
 class GroundingError(StructuredOutputError):
     """A purported fact was not supported by verbatim article evidence."""
+
+
+class TTSError(RuntimeError):
+    """Vietnamese speech synthesis or WAV validation failed."""

@@ -1,0 +1,32 @@
+version: 1
+acronyms:
+  AI: "ây ai"
+  API: "ây pi ai"
+  CEO: "si i ô"
+  CPU: "si pi diu"
+  GPU: "gi pi diu"
+  IoT: "ai ô ti"
+  RAM: "ram"
+  5G: "năm gi"
+  Wi-Fi: "quai fai"
+currencies:
+  USD: "đô la Mỹ"
+  VND: "đồng Việt Nam"
+  VNĐ: "đồng Việt Nam"
+  EUR: "ơ rô"
+units:
+  km: "ki lô mét"
+  m: "mét"
+  cm: "xen ti mét"
+  kg: "ki lô gam"
+  MB: "mê ga bai"
+  GB: "gi ga bai"
+  GHz: "gi ga héc"
+  MHz: "mê ga héc"
+  W: "oát"
+  kW: "ki lô oát"
+  MP: "mê ga pích xeo"
+  mAh: "mi li am pe giờ"
+replacements:
+  TP.HCM: "Thành phố Hồ Chí Minh"
+  Hà Nội: "Hà Nội"

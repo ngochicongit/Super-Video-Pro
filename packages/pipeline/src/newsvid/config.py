@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from importlib.resources import files
 from pathlib import Path
 
 import yaml
@@ -15,11 +16,19 @@ class ServiceConfig(BaseModel):
     ollama_timeout_seconds: float = Field(default=120, gt=0)
     ollama_max_attempts: int = Field(default=3, ge=1, le=5)
     comfyui_url: str = "http://127.0.0.1:8188"
+    tts_provider: str = Field(default="piper", pattern=r"^(piper|f5tts)$")
+    tts_voice: str = "vi_VN-vais1000-medium"
+    tts_speed: float = Field(default=1.0, ge=0.5, le=2.0)
+    tts_timeout_seconds: float = Field(default=120, gt=0)
+    piper_executable: str = "piper"
+    piper_model_path: Path = Path("models/piper/vi_VN-vais1000-medium.onnx")
+    f5tts_url: str = "http://127.0.0.1:7860"
 
 
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     projects_dir: Path = Path("projects")
+    pronunciation_path: Path = Path("config/pronunciation_vi.yaml")
     log_level: str = Field(default="INFO", pattern=r"^(DEBUG|INFO|WARNING|ERROR)$")
     services: ServiceConfig = Field(default_factory=ServiceConfig)
 
@@ -33,4 +42,12 @@ def load_config(path: Path | None = None) -> AppConfig:
         config.projects_dir = Path(project_override)
     elif not config.projects_dir.is_absolute():
         config.projects_dir = (config_path.parent.parent / config.projects_dir).resolve()
+    if not config.pronunciation_path.is_absolute():
+        config.pronunciation_path = (config_path.parent.parent / config.pronunciation_path).resolve()
+    if not config.pronunciation_path.is_file():
+        packaged = files("newsvid_brain").joinpath("data/pronunciation_vi.yaml")
+        if packaged.is_file():
+            config.pronunciation_path = Path(str(packaged))
+    if not config.services.piper_model_path.is_absolute():
+        config.services.piper_model_path = (config_path.parent.parent / config.services.piper_model_path).resolve()
     return config

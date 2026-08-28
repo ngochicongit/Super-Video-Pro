@@ -11,10 +11,13 @@ from .project import ProjectManager
 from .schemas import PipelineStage, StageStatus
 from .ingestion import IngestionCoordinator
 from newsvid_ingest.errors import ArticleExtractionError
-from newsvid_brain import LLMError, NewsStyle, OllamaConfig, OllamaProvider
+from newsvid_brain import (F5TTSConfig, F5TTSProvider, LLMError, NewsStyle,
+                           OllamaConfig, OllamaProvider, PiperConfig, PiperProvider,
+                           TTSError, load_pronunciation)
 from .facts import FactsCoordinator
 from .scripts import ScriptCoordinator
 from .storyboards import StoryboardCoordinator
+from .tts import TTSCoordinator
 
 
 def _print_model(model: object) -> None:
@@ -43,6 +46,10 @@ def _parser() -> argparse.ArgumentParser:
                         default=NewsStyle.BREAKING_NEWS.value)
     storyboard = commands.add_parser("storyboard", help="Build the editable visual storyboard")
     storyboard.add_argument("project_id")
+    tts = commands.add_parser("tts", help="Generate cached Vietnamese WAV narration")
+    tts.add_argument("project_id")
+    tts.add_argument("--provider", choices=["piper", "f5tts"])
+    tts.add_argument("--voice")
     project = commands.add_parser("project", help="Manage Phase 0 projects")
     project_commands = project.add_subparsers(dest="project_command", required=True)
     create = project_commands.add_parser("create", help="Create a project")
@@ -119,6 +126,31 @@ def main(argv: list[str] | None = None) -> int:
             result = StoryboardCoordinator(manager).build(args.project_id)
         except (LLMError, OSError, ValueError) as exc:
             print(f"STORYBOARD ERROR: {exc}")
+            return 2
+        _print_model(result)
+        return 0
+    if args.command == "tts":
+        provider_name = args.provider or config.services.tts_provider
+        voice = args.voice or config.services.tts_voice
+        if provider_name == "piper":
+            provider = PiperProvider(PiperConfig(
+                executable=config.services.piper_executable,
+                model_path=config.services.piper_model_path,
+                voice_name=voice,
+                speed=config.services.tts_speed,
+                timeout_seconds=config.services.tts_timeout_seconds,
+            ))
+        else:
+            provider = F5TTSProvider(F5TTSConfig(
+                base_url=config.services.f5tts_url,
+                speed=config.services.tts_speed,
+                timeout_seconds=config.services.tts_timeout_seconds,
+            ))
+        try:
+            result = TTSCoordinator(manager, provider, load_pronunciation(config.pronunciation_path),
+                                    voice=voice).generate(args.project_id)
+        except (TTSError, OSError, ValueError) as exc:
+            print(f"TTS ERROR: {exc}")
             return 2
         _print_model(result)
         return 0

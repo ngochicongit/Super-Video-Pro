@@ -1,4 +1,4 @@
-# Upstream reuse audit — Phases 0–4
+# Upstream reuse audit — Phases 0–5
 
 Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and are read-only references. Runtime code does not import from them.
 
@@ -8,7 +8,7 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 |---|---|---|---|---|---|---|
 | Pipeline orchestration | Videogen | `src/videogen/pipeline/orchestrator.py`, `series_orchestrator.py` | No license found | REFERENCE_ONLY | Phase 0 architecture only | Valuable staged orchestration, but no license grant and full pipeline begins after Phase 0. |
 | Checkpoint/resume | Videogen | `src/videogen/pipeline/checkpoint.py`, `tests/test_checkpoint.py` | No license found | REFERENCE_ONLY | `packages/pipeline/src/newsvid/checkpoint.py` | Concepts reviewed; implementation is new, atomic, validates corruption, and models the required stage set. |
-| Cache | Videogen / html-video | checkpoint scene flags; `packages/core/src/asset-store.ts` | No license / Apache-2.0 | EXTEND (future) | Not created in Phase 0 | Project cache directory exists, but fingerprints and invalidation belong to later stages; no placeholder module. |
+| Cache | Videogen / Auto-Create-Video / html-video | checkpoint TTS flags; file-existence TTS reuse; `packages/core/src/asset-store.ts` | No license / MIT / Apache-2.0 | EXTEND | `TTSCoordinator`, `TTSManifest` | Phase 5 extends scene reuse into content-addressed cache entries covering narration, normalization, voice, provider and provider configuration, with WAV hash validation. |
 | Project management | html-video | `packages/core/src/registry.ts`, `project.ts`, `types/index.ts` | Apache-2.0 | ADAPT | `packages/pipeline/src/newsvid/project.py` | Adapted JSON-on-disk project store to Python, strict IDs, atomic writes and the master-plan directory model. |
 | Core schemas | html-video / Auto-Create-Video | `packages/core/src/types/index.ts`; `src/render/script-schema.ts` | Apache-2.0 / MIT | ADAPT | `packages/pipeline/src/newsvid/schemas.py` | Reused strict boundary-validation approach; Phase 0 models only Project and Checkpoint. |
 | Doctor | html-video | `packages/cli/src/commands/doctor.ts`, `packages/runtime/src/detect.ts` | Apache-2.0 | ADAPT | `packages/pipeline/src/newsvid/doctor.py` | Adapted command discovery/reporting to Windows dependencies and required/optional semantics. |
@@ -23,7 +23,9 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 | Duration and short pacing | Videogen / newsvid | `processors/content_chunker.py`, `types.py` (`WPM`); `tts.py` duration estimates | No license | REFERENCE_ONLY | `script_prompts.py`, `script_service.py` | Independently implemented a 150 WPM target, 30–90 second bounds, default 60 seconds, and a 20% acceptance window. |
 | News narration styles | No complete upstream implementation | newsvid generic anchor prompt only | No license | WRITE_NEW | `NewsStyle`, `STYLE_GUIDANCE` | Five factual Vietnamese style profiles and grounded constraints were required but absent upstream. |
 | Fact-reference integrity | No upstream implementation found | — | — | WRITE_NEW | `ScriptGenerator`, `ScriptCoordinator` | Deterministic segment IDs, required references on every segment, unresolved-reference rejection, checkpoint/cache integration and atomic `script.json` persistence are project-specific requirements. |
-| TTS | Videogen / Auto-Create-Video / newsvid | `clients/tts.py`; `src/tts/*`; `tts.py` | No license / MIT / No license | REFERENCE_ONLY | Phase 5 | Actual provider integration is outside Phase 0. |
+| TTS abstraction / narration | Videogen / Auto-Create-Video / newsvid | `clients/tts.py`, orchestrator; `src/tts/tts-client.ts`, `pipeline.ts`; `tts.py` | No license / MIT / No license | ADAPT | `TTSProvider`, `PiperProvider`, `F5TTSProvider`, `TTSCoordinator` | Adapted the licensed swappable-client boundary and per-scene narration flow; independently implemented local Piper and isolated F5 adapters because upstream providers differ. |
+| Vietnamese normalization | No complete upstream implementation | Auto-Create-Video Vietnamese narration fixtures only | Mixed | WRITE_NEW | `normalize_vi.py`, `config/pronunciation_vi.yaml` | Numbers, dates, years, percentages, currencies, units and technology pronunciation required a deterministic external dictionary not found upstream. |
+| WAV validation / atomic audio | Videogen / Auto-Create-Video | direct response/file writes | Mixed | EXTEND | `tts_providers.py`, `tts.py` | Adds standard-library WAV validation, atomic replacement, audio hashing and corruption-triggered regeneration before cache acceptance. |
 | STT/alignment | Videogen | `clients/stt.py` | No license | REFERENCE_ONLY | Phase 6 | Word timestamps mapped; no source copied. |
 | Subtitles | Videogen | `generators/subtitles.py`, `processors/subtitle_qa.py` | No license | REFERENCE_ONLY | Phase 6 | ASS/karaoke and QA concepts mapped only. |
 | FFmpeg / Ken Burns / transitions | Videogen | `assembler/encoder.py`, `compositor.py`, `ken_burns.py`, `transitions.py` | No license | REFERENCE_ONLY | Phases 7/10 | Current Electron app already centralizes tool execution; no premature Python renderer. |
@@ -55,5 +57,7 @@ Reviewed 2026-08-28. All repositories live under ignored `.upstream/` paths and 
 - Phase 3 script validation: no inspected source validates narration references against a grounded fact manifest or rejects non-Vietnamese and off-duration structured output before persistence.
 - Phase 4 storyboard: html-video provides a general graph, but the master plan needs one factual news-specific editable artifact, not a second competing graph.
 - Phase 4 VisualRouter: no inspected implementation covers every required routing rule or guarantees that real people/events avoid generated likenesses.
+- Phase 5 providers: upstream TTS clients target GPU gateways or hosted APIs, not the required local Piper and isolated optional F5-TTS interfaces.
+- Phase 5 normalization/cache: no upstream combines external Vietnamese pronunciation rules with content/config fingerprints and validated WAV hashes.
 
 No upstream tests were copied verbatim. Videogen's article parser tests informed independently written fixture, noise-removal, section and fallback assertions.

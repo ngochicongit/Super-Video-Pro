@@ -1,4 +1,5 @@
 projects_dir: projects
+pronunciation_path: config/pronunciation_vi.yaml
 log_level: INFO
 services:
   ollama_url: http://127.0.0.1:11434
@@ -7,3 +8,10 @@ services:
   ollama_timeout_seconds: 120
   ollama_max_attempts: 3
   comfyui_url: http://127.0.0.1:8188
+  tts_provider: piper
+  tts_voice: vi_VN-vais1000-medium
+  tts_speed: 1.0
+  tts_timeout_seconds: 120
+  piper_executable: piper
+  piper_model_path: models/piper/vi_VN-vais1000-medium.onnx
+  f5tts_url: http://127.0.0.1:7860

@@ -37,9 +37,9 @@ pnpm package
 
 The NSIS installer is emitted under `release/`.
 
-## AI News Video — Phases 0–4
+## AI News Video — Phases 0–5
 
-The Python foundation is isolated from the Electron renderer and exposes project/checkpoint management, article ingestion, grounded facts, Vietnamese scripts, and an editable visual storyboard. It intentionally does not generate speech or video yet.
+The Python foundation is isolated from the Electron renderer and exposes project/checkpoint management, article ingestion, grounded facts, Vietnamese scripts, an editable visual storyboard, and cached Vietnamese WAV narration. It intentionally does not create alignment, subtitles or video yet.
 
 ```powershell
 python -m venv .venv
@@ -86,6 +86,17 @@ The default is a 60-second `breaking-news` script. Durations from 30–90 second
 ```
 
 `storyboard.json` is the sole editing source of truth. It preserves narration, timing and `fact_refs`, and records a template plus visual provenance for every scene. The deterministic router uses article imagery for real people/events, graphics for numbers and chronology, screenshots for software/source fallback, and generated illustration only for abstract concepts.
+
+### Vietnamese TTS
+
+```powershell
+.\.venv\Scripts\newsvid tts <project-id>
+.\.venv\Scripts\newsvid tts <project-id> --provider f5tts --voice female-vi
+```
+
+Piper is the default fast local provider and requires the configured Vietnamese ONNX model. F5-TTS is optional and accessed only through the configured isolated local HTTP service. Each scene produces `audio/scene_NNN.wav`; unchanged normalized narration, voice and provider configuration reuse the validated deterministic cache.
+
+Pronunciation rules are editable in `config/pronunciation_vi.yaml`. They cover technology acronyms, currencies and units while `normalize_vi.py` handles numbers, dates, years and percentages.
 
 ## Security boundary
 

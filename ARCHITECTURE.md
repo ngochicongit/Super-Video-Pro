@@ -39,4 +39,12 @@ The generator assigns segment IDs locally, requires the first segment to be a gr
 
 Every scene retains its script segment ID, narration, duration and exact `fact_refs`. `VisualProvenance` distinguishes article, generated, stock, user, graphic and screenshot media and validates the fields required by each source type.
 
-`VisualRouter` makes deterministic decisions from referenced facts and narration: hook → kinetic text; real person/event → article image or source screenshot; numbers → stat/chart/comparison; chronology → timeline; location → map; software/website → screenshot; abstract concept → ComfyUI illustration plan; outro → closing graphic. This phase selects plans and template IDs only—it does not render visuals or implement TTS.
+`VisualRouter` makes deterministic decisions from referenced facts and narration: hook → kinetic text; real person/event → article image or source screenshot; numbers → stat/chart/comparison; chronology → timeline; location → map; software/website → screenshot; abstract concept → ComfyUI illustration plan; outro → closing graphic. Phase 4 selects plans and template IDs only; it does not render visuals.
+
+## Phase 5 Vietnamese TTS
+
+`TTSProvider` isolates orchestration from speech engines. `PiperProvider` invokes the configured local executable with `shell=False`, validates the generated WAV and replaces the destination atomically. `F5TTSProvider` is an optional HTTP adapter to an isolated local service; importing or running the core pipeline does not require F5-TTS.
+
+`normalize_vi.py` deterministically expands numbers, dates, years and percentages. Editable acronym, currency, unit and project-specific pronunciation rules live in `config/pronunciation_vi.yaml`, which is also packaged into the wheel as a fallback resource.
+
+`TTSCoordinator` generates one `audio/scene_NNN.wav` per storyboard scene and records `audio/tts_manifest.json`. Each cache fingerprint includes original and normalized narration, voice, provider identity/configuration and pronunciation rules. Cache hits require a valid WAV whose SHA-256 still matches the manifest; changed or corrupted scenes regenerate independently. No timestamp, alignment, caption or subtitle artifact is produced in Phase 5.
