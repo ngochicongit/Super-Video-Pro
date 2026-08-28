@@ -18,6 +18,7 @@ class RenderedScene(StrictModel):
     audio_path: str = Field(pattern=r"^audio/scene_[0-9]{3,}\.wav$")
     video_path: str = Field(pattern=r"^scenes/scene_[0-9]{3,}\.mp4$")
     effect: str
+    renderer: str = "ffmpeg-article-image"
     duration_seconds: float = Field(gt=0)
     fingerprint: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
 

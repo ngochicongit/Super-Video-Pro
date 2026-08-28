@@ -56,11 +56,18 @@ def _playwright() -> DependencyStatus:
 
 
 def collect_status(config: AppConfig) -> list[DependencyStatus]:
+    repository_root = Path(__file__).resolve().parents[4]
+    node_playwright = repository_root / "node_modules" / "playwright" / "package.json"
+    gsap = repository_root / "node_modules" / "gsap" / "dist" / "gsap.min.js"
     checks = [
         DependencyStatus("Python", "OK" if sys.version_info >= (3, 11) else "ERROR", sys.version.split()[0], True),
         _command("node", ["--version"], True),
         _command("ffmpeg", ["-version"], True),
         _command("ffprobe", ["-version"], True),
+        DependencyStatus("Chromium", "OK" if config.services.chromium_executable.is_file() else "MISSING",
+                         str(config.services.chromium_executable), True),
+        DependencyStatus("Motion", "OK" if node_playwright.is_file() and gsap.is_file() else "MISSING",
+                         "Playwright 1.58.2 + GSAP 3.14.2", True),
         _command("ollama", ["--version"]),
         DependencyStatus("Qwen", "CONFIGURED", config.services.ollama_model),
         _playwright(),

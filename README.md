@@ -37,7 +37,7 @@ pnpm package
 
 The NSIS installer is emitted under `release/`.
 
-## AI News Video — Phases 0–7
+## AI News Video — Phases 0–8
 
 The Python foundation is isolated from the Electron renderer and now supports the first complete basic article-to-video path: ingestion, grounded script/storyboard, Vietnamese WAV narration, word alignment, karaoke ASS subtitles, cached article imagery and vertical FFmpeg output without ComfyUI.
 
@@ -113,6 +113,10 @@ The command sends each validated scene WAV and normalized Vietnamese narration t
 ```
 
 The Phase 7 renderer downloads only attributed entries from `images.json`, validates public URLs and image MIME/size, and caches bytes by URL with SHA-256 integrity. Each storyboard scene uses an article image with crop/resize plus deterministic zoom or pan, its cached narration, and FFmpeg H.264/AAC composition. It validates a subtitle-free preview before burning Phase 6 ASS into `output/article-video.mp4`. No ComfyUI service or generated imagery is required.
+
+### Motion graphics
+
+Phase 8 integrates motion graphics into the same `SceneRenderer`. Graphic scenes selected in `storyboard.json` render through an html-video-derived Playwright/Chromium recording adapter with embedded GSAP timelines; article-image scenes continue through the Phase 7 FFmpeg Ken Burns path. Supported structured templates are `hook`, `headline`, `stat-hero`, `chart`, `comparison`, `timeline`, `quote`, and `outro`. Each template supports native 1080×1920 output and is muxed with the existing scene narration before normal preview, concatenation and subtitle composition.
 
 ## Security boundary
 

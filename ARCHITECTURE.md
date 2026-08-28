@@ -64,3 +64,11 @@ The ASS generator adapts Videogen's punctuation grouping, timestamp formatting a
 `FFmpegArticleRenderer` adapts Videogen's basic CPU path: aspect-fill scale and center crop, deterministic `zoompan` presets, per-scene H.264/yuv420p video plus AAC narration, concat demuxing, and libass subtitle burn. Commands use argument arrays with `shell=False`; ComfyUI is not imported or contacted.
 
 `ArticleVideoCoordinator` reads `storyboard.json` as the editing source of truth and validates the existing image, TTS and ASS artifacts. It records VISUALS and SCENES checkpoints, concatenates and probes `output/article-video.preview.mp4`, completes PREVIEW only after resolution/audio validation, then burns captions and probes the final vertical MP4. Unchanged complete inputs reuse the final manifest; unchanged scene fingerprints reuse existing scene MP4s.
+
+## Phase 8 motion graphics
+
+`SceneRenderer` is the single scene-rendering boundary. It retains `FFmpegArticleRenderer` for sourced article imagery and dispatches supported graphic scene types to `HyperFramesChromiumRenderer`; no parallel project or storyboard representation is introduced.
+
+The motion adapter is a narrow adaptation of html-video's working HyperFrames renderer: generate self-contained HTML, freeze animation during page load, launch local Edge through Playwright, unfreeze and drive the GSAP timeline, record WebM at the requested viewport, and encode deterministic H.264/yuv420p MP4 through FFmpeg. The resulting silent motion clip is muxed with the Phase 5 scene WAV before entering the existing preview/final pipeline.
+
+`MotionTemplateInput` validates structured inputs for hook, headline, stat-hero, chart, comparison, timeline, quote and outro. The visual system adapts Auto-Create-Video's Vietnamese social-news hierarchy and navy/cyan/purple palette while using local system fonts and embedded GSAP to avoid network-dependent rendering. Runtime and template fingerprints participate in scene/final cache invalidation.

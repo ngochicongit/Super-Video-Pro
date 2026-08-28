@@ -1,6 +1,6 @@
 # Third-party notices — AI News Video
 
-Phases 0–7 were reviewed against these read-only upstream snapshots. The application has no runtime dependency on `.upstream/`.
+Phases 0–8 were reviewed against these read-only upstream snapshots. The application has no runtime dependency on `.upstream/`.
 
 ## Auto-Create-Video
 
@@ -8,14 +8,14 @@ Phases 0–7 were reviewed against these read-only upstream snapshots. The appli
 - Commit reviewed: `8c2e04337ca7fb574692c5830dafde35ac2017cd`
 - Copyright: Copyright (c) 2026 Ho Quang Hai
 - License: MIT; full text in `licenses/upstream/Auto-Create-Video-MIT.txt`.
-- Phase 0–5 use: Phase 5 also adapts the licensed swappable TTS-client and per-scene narration/cache concepts. No TypeScript source or media asset is copied.
+- Phase 0–8 use: Phase 8 adapts the licensed structured scene schema, audio-derived timing, GSAP timeline concepts and Vietnamese social-news visual language. No upstream TypeScript source or media asset is copied.
 
 ## html-video
 
 - Repository: https://github.com/nexu-io/html-video
 - Commit reviewed: `c414ecc07f795add03807d5d9ce4baefd807cea2`
 - License: Apache License 2.0; full text in `licenses/upstream/html-video-Apache-2.0.txt`.
-- Phase 0–4 use: project/fetching concepts plus Phase 4 content-graph, frame-record and template-metadata concepts are adapted into Python with project-specific validation.
+- Phase 0–8 use: Phase 8 adapts the Apache-2.0 Playwright/Chromium recordVideo → WebM → FFmpeg foundation and template metadata/discovery concepts into the existing SceneRenderer boundary.
 - The upstream template attribution chain was reviewed in `ATTRIBUTIONS.md`; no templates or template assets are distributed through Phase 5.
 
 ## Videogen
@@ -45,6 +45,13 @@ Phase 5 adds no Python dependency or copied voice/model. Piper and F5-TTS are op
 Phase 6 adds no Python dependency or copied model/font. WhisperX is an optional isolated local runtime whose package, model and licenses must be supplied separately by the operator. ASS generation is implemented locally; no Videogen source was copied.
 
 Phase 7 adds no Python dependency or copied image/media asset. It invokes the operator-installed FFmpeg/FFprobe already required by the application. Article images retain their source URLs in project provenance and remain subject to their publishers' rights and terms.
+
+## Phase 8 JavaScript runtime dependencies
+
+- Playwright 1.58.2 — Apache-2.0. It controls the locally installed Edge/Chromium runtime. Existing Playwright Apache-2.0 text is stored at `licenses/python/playwright-Apache-2.0.txt` and applies to the same upstream project.
+- GSAP 3.14.2 — Standard "No Charge" GSAP License, not MIT/Apache. Official terms: https://gsap.com/community/standard-license/. Project-specific notice: `licenses/javascript/GSAP-3.14.2-NOTICE.md`.
+- Phase 8 uses GSAP only inside predefined render templates; it does not expose a GSAP/Webflow-like visual animation builder.
+- No html-video or Auto-Create-Video template asset is copied.
 
 ## Phase 1 Python dependencies
 

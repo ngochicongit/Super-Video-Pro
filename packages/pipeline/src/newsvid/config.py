@@ -32,6 +32,8 @@ class ServiceConfig(BaseModel):
     ffmpeg_executable: str = "ffmpeg"
     ffprobe_executable: str = "ffprobe"
     image_max_bytes: int = Field(default=20 * 1024 * 1024, ge=1024)
+    node_executable: str = "node"
+    chromium_executable: Path = Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")
 
 
 class AppConfig(BaseModel):

@@ -124,6 +124,15 @@ class FFmpegArticleRenderer:
             concat_file.unlink(missing_ok=True)
         return output
 
+    def mux_audio(self, video: Path, audio: Path, output: Path, *, duration: float) -> Path:
+        if not video.is_file() or not audio.is_file():
+            raise RenderError("Motion video and narration audio are required")
+        self._run([self.ffmpeg, "-y", "-i", str(video), "-i", str(audio),
+                   "-t", f"{duration:.6f}", "-c:v", "copy", "-c:a", "aac",
+                   "-b:a", "128k", "-shortest", "-movflags", "+faststart", str(output)],
+                  f"muxing motion scene {output.name}")
+        return output
+
     def burn_subtitles(self, video: Path, ass: Path, output: Path) -> Path:
         if not video.is_file() or not ass.is_file():
             raise RenderError("Video and ASS inputs are required")
@@ -176,10 +185,11 @@ class FFmpegArticleRenderer:
 
 class ArticleVideoCoordinator:
     def __init__(self, projects: ProjectManager, image_cache: ArticleImageCache,
-                 renderer: FFmpegArticleRenderer) -> None:
+                 renderer: FFmpegArticleRenderer, scene_renderer: object | None = None) -> None:
         self.projects = projects
         self.image_cache = image_cache
         self.renderer = renderer
+        self.scene_renderer = scene_renderer
 
     def render(self, project_id: str) -> RenderManifest:
         directory = self.projects.project_dir(project_id)
@@ -194,8 +204,8 @@ class ArticleVideoCoordinator:
         images = load_model(directory / "images.json", ImageManifest)
         tts = load_model(directory / "audio" / "tts_manifest.json", TTSManifest)
         ass_path = directory / "captions" / "subtitles.ass"
-        if not ass_path.is_file() or not images.images:
-            raise RenderError("Article images and Phase 6 ASS subtitles are required")
+        if not ass_path.is_file():
+            raise RenderError("Phase 6 ASS subtitles are required")
         entries = {entry.scene_id: entry for entry in tts.entries}
         if set(entries) != {scene.id for scene in storyboard.scenes}:
             raise RenderError("TTS manifest does not cover every storyboard scene")
@@ -203,6 +213,8 @@ class ArticleVideoCoordinator:
         for value in (storyboard.model_dump_json(), facts.model_dump_json(), images.model_dump_json(),
                       tts.model_dump_json(), _sha256_file(ass_path)):
             digest.update(value.encode("utf-8"))
+        if self.scene_renderer is not None:
+            digest.update(self.scene_renderer.motion.cache_key.encode("utf-8"))
         fingerprint = f"sha256:{digest.hexdigest()}"
         manifest_path = directory / "output" / "render_manifest.json"
         final_path = directory / "output" / "article-video.mp4"
@@ -238,26 +250,40 @@ class ArticleVideoCoordinator:
             scene_paths: list[Path] = []
             for index, scene in enumerate(storyboard.scenes):
                 preferred = str(scene.visual.provenance.source_url) if scene.visual.provenance.source_url else ""
-                image, _asset = acquired.get(preferred, acquired[str(images.images[index % len(images.images)].source_url)])
+                fallback = acquired.get(str(images.images[index % len(images.images)].source_url)) if images.images else None
+                selected = acquired.get(preferred) or fallback
+                image = selected[0] if selected else None
                 audio_entry = entries[scene.id]
                 audio = directory / audio_entry.relative_path
                 effect = EFFECTS[index % len(EFFECTS)]
                 scene_digest = hashlib.sha256(
-                    f"{fingerprint}|{scene.id}|{_sha256_file(image)}|{audio_entry.audio_sha256}|{effect}".encode()
+                    f"{fingerprint}|{scene.id}|{_sha256_file(image) if image else 'motion'}|{audio_entry.audio_sha256}|{effect}".encode()
                 ).hexdigest()
                 scene_fingerprint = f"sha256:{scene_digest}"
                 output = directory / "scenes" / f"{scene.id}.mp4"
                 prior = prior_scenes.get(scene.id)
                 if not (prior and prior.fingerprint == scene_fingerprint and output.is_file()):
-                    self.renderer.render_scene(image, audio, output,
-                                               duration=audio_entry.duration_seconds,
-                                               width=storyboard.video.width, height=storyboard.video.height,
-                                               fps=storyboard.video.fps, effect=effect)
+                    if self.scene_renderer is not None:
+                        renderer_name = self.scene_renderer.render(
+                            scene, image=image, audio=audio, output=output,
+                            duration=audio_entry.duration_seconds, width=storyboard.video.width,
+                            height=storyboard.video.height, fps=storyboard.video.fps, effect=effect)
+                    else:
+                        if image is None:
+                            raise RenderError(f"No article image available for scene {scene.id}")
+                        self.renderer.render_scene(image, audio, output,
+                                                   duration=audio_entry.duration_seconds,
+                                                   width=storyboard.video.width, height=storyboard.video.height,
+                                                   fps=storyboard.video.fps, effect=effect)
+                        renderer_name = "ffmpeg-article-image"
+                else:
+                    renderer_name = prior.renderer
                 scene_paths.append(output)
                 rendered.append(RenderedScene(
-                    scene_id=scene.id, image_path=str(image.relative_to(directory)).replace("\\", "/"),
+                    scene_id=scene.id, image_path=(str(image.relative_to(directory)).replace("\\", "/")
+                                                   if image else "motion-generated"),
                     audio_path=audio_entry.relative_path, video_path=f"scenes/{scene.id}.mp4",
-                    effect=effect, duration_seconds=audio_entry.duration_seconds,
+                    effect=effect, renderer=renderer_name, duration_seconds=audio_entry.duration_seconds,
                     fingerprint=scene_fingerprint,
                 ))
             store.update(PipelineStage.SCENES, StageStatus.COMPLETED, fingerprint=fingerprint,

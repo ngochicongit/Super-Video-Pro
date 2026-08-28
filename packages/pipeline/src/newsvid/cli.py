@@ -21,6 +21,7 @@ from .storyboards import StoryboardCoordinator
 from .tts import TTSCoordinator
 from .alignment import AlignmentCoordinator
 from .article_renderer import ArticleImageCache, ArticleVideoCoordinator, FFmpegArticleRenderer
+from .motion_renderer import HyperFramesChromiumRenderer, SceneRenderer
 
 
 def _print_model(model: object) -> None:
@@ -182,11 +183,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "render-article":
         try:
+            repository_root = Path.cwd() if (Path.cwd() / "package.json").is_file() else Path(__file__).resolve().parents[4]
+            ffmpeg_renderer = FFmpegArticleRenderer(ffmpeg=config.services.ffmpeg_executable,
+                                                    ffprobe=config.services.ffprobe_executable)
+            motion_renderer = HyperFramesChromiumRenderer(
+                repository_root=repository_root,
+                node=config.services.node_executable, ffmpeg=config.services.ffmpeg_executable,
+                chromium=config.services.chromium_executable,
+            )
             result = ArticleVideoCoordinator(
                 manager,
                 ArticleImageCache(max_bytes=config.services.image_max_bytes),
-                FFmpegArticleRenderer(ffmpeg=config.services.ffmpeg_executable,
-                                      ffprobe=config.services.ffprobe_executable),
+                ffmpeg_renderer, SceneRenderer(ffmpeg_renderer, motion_renderer),
             ).render(args.project_id)
         except (RenderError, OSError, ValueError) as exc:
             print(f"RENDER ERROR: {exc}")

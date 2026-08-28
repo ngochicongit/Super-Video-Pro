@@ -18,8 +18,9 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Article image acquisition/cache | Videogen `clients/image_search.py`, `tests/test_image_search.py` | `ArticleImageCache`, `ImageAsset` | 7 |
 | FFmpeg scene/final composition | Videogen `assembler/compositor.py`, `encoder.py`; current Electron FFmpeg execution conventions | `FFmpegArticleRenderer`, `ArticleVideoCoordinator` | 7 basic / 10 advanced |
 | Ken Burns | Videogen `assembler/ken_burns.py`, tests; Auto-Create-Video `html-composer.ts` | FFmpeg crop/scale/zoompan presets | 7 |
-| HyperFrames/GSAP | Auto-Create-Video `hyperframes-runner.ts`, `templates/animations.js`; html-video `adapter-hyperframes` | Future `HTMLRenderer` adapter | 8 |
-| Chromium renderer | html-video engine adapters/CLI export path | Future scene renderer | 8 |
+| HyperFrames/GSAP | Auto-Create-Video `hyperframes-runner.ts`, `html-composer.ts`, `script-schema.ts`, template CSS/JS; html-video HyperFrames adapter | `MotionTemplateInput`, embedded GSAP templates, `HyperFramesChromiumRenderer` | 8 |
+| Chromium renderer | html-video `adapter-hyperframes/src/render.ts` and validation/capabilities; template discovery/metadata | `render-motion-scene.mjs`, Playwright Edge recording, FFmpeg encoding | 8 |
+| Motion template catalog | html-video kinetic/stat/chart/outro metadata; Auto-Create-Video Vietnamese scene layouts | hook/headline/stat/chart/comparison/timeline/quote/outro registry | 8 |
 | ComfyUI | Videogen `clients/comfyui.py`, `docs/workflows/*` | Future `ComfyUIProvider` | 9 |
 | Templates | Auto-Create-Video `render/script-schema.ts`, samples and templates; html-video template metadata YAML | Phase 4 template IDs in `VisualRouter`; renderer registry remains future | 4 mapping / 8 rendering |
 | Content graph / frames | html-video `content-graph/src/index.ts`, `core/src/project.ts`, `core/src/types/index.ts` | `Storyboard`, `StoryboardScene`, ordered scene/frame model | 4 |
@@ -31,4 +32,4 @@ Snapshots: Videogen `6134ccdb05a19b8c88bc6609eafe47aefee7adca`; Auto-Create-Vide
 | Metadata/images | OpenGraph/JSON-LD and DOM patterns inspected across the three sources; no complete implementation | `Source`, `ArticleImage`, `ImageManifest` | 1 |
 | Browser fallback | html-video Chromium/Playwright engine boundary | `PlaywrightFetcher` | 1 |
 
-Phase 7 adds only the basic article-image FFmpeg renderer. It intentionally creates no ComfyUI visual generation, motion-graphics/Chromium template runtime, advanced transitions, agent or Studio module. WhisperX and F5-TTS remain optional adapters to isolated loopback services.
+Phase 8 adds the audited HyperFrames-style Chromium motion runtime and eight predefined templates. It intentionally creates no ComfyUI visual generation, free-form browser animation framework, advanced transition editor, agent or Studio module. WhisperX and F5-TTS remain optional adapters to isolated loopback services.
