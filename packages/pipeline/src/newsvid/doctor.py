@@ -73,12 +73,14 @@ def _ollama(config: AppConfig) -> DependencyStatus:
             return DependencyStatus("Ollama", "OK", f"{model} ready at {url}", True)
         return DependencyStatus(
             "Ollama", "MODEL_MISSING",
-            f"Service is online, but model '{model}' is missing. Run: ollama pull {model}", True,
+            f"Dịch vụ đang chạy nhưng thiếu model '{model}'. Dùng nút tự động thiết lập để tải "
+            f"model nhẹ {config.services.ollama_setup_model}.", True,
         )
     except (httpx.HTTPError, ValueError, TypeError) as exc:
         return DependencyStatus(
             "Ollama", "OFFLINE",
-            f"Cannot reach {url}. Install/start Ollama, then run: ollama pull {model} ({exc})", True,
+            f"Không kết nối được {url}. Dùng nút tự động thiết lập để cài Ollama và tải "
+            f"model nhẹ {config.services.ollama_setup_model}. ({exc})", True,
         )
 
 
