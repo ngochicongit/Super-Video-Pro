@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import vi from "./locales/vi.json";
 const views = [
   "Projects",
   "Create Project",
@@ -84,6 +85,13 @@ export function patchStoryboardScene(
     ),
   };
 }
+function operationLabel(operation: string): string {
+  return (vi.operations as Record<string, string>)[operation] ?? operation;
+}
+function stageLabel(stage: string): string {
+  const key = stage.split(":").at(-1) ?? stage;
+  return (vi.stages as Record<string, string>)[key] ?? stage;
+}
 export function WebStudio() {
   const [view, setView] = useState<View>("Projects"),
     [projects, setProjects] = useState<any[]>([]),
@@ -92,6 +100,7 @@ export function WebStudio() {
     [storyboard, setStoryboard] = useState<Storyboard>(),
     [sceneId, setSceneId] = useState(""),
     [job, setJob] = useState<Job>(),
+    [pendingOperation, setPendingOperation] = useState<string>(),
     [error, setError] = useState(""),
     [projectName, setProjectName] = useState(""),
     [articleSource, setArticleSource] = useState("");
@@ -151,8 +160,29 @@ export function WebStudio() {
           .then((next) => {
             if (!cancelled) {
               setJob(next);
-              if (next.status === "completed")
-                void loadProject(next.project_id);
+              if (next.status === "completed") {
+                if (next.project_id === "system") {
+                  void request<ServiceStatus[]>("/services/status").then(
+                    async (services) => {
+                      setData((current) => ({ ...current, services }));
+                      if (pendingOperation && project) {
+                        const operation = pendingOperation;
+                        setPendingOperation(undefined);
+                        setJob(
+                          await request<Job>(
+                            `/projects/${project.id}/${operation}`,
+                            {
+                              method: "POST",
+                              headers: { "content-type": "application/json" },
+                              body: JSON.stringify({}),
+                            },
+                          ),
+                        );
+                      }
+                    },
+                  ).catch((reason) => setError(String(reason)));
+                } else void loadProject(next.project_id);
+              }
             }
           })
           .catch((reason) => !cancelled && setError(String(reason))),
@@ -162,7 +192,7 @@ export function WebStudio() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [job, loadProject]);
+  }, [job, loadProject, pendingOperation, project]);
   async function create() {
     const name = projectName.trim();
     if (!name) return;
@@ -199,10 +229,16 @@ export function WebStudio() {
         setData((current) => ({ ...current, services }));
         const ollama = services.find((service) => service.name === "Ollama");
         if (!ollama || ollama.status !== "OK") {
-          throw new Error(
-            ollama?.detail ??
-              "Không thể kiểm tra Ollama. Hãy mở tab Services và thử lại.",
+          setPendingOperation(operation);
+          setView("Services");
+          setJob(
+            await request<Job>("/services/ollama/setup", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({}),
+            }),
           );
+          return;
         }
       }
       setJob(
@@ -214,6 +250,20 @@ export function WebStudio() {
               ? { scene_id: sceneId }
               : {},
           ),
+        }),
+      );
+    } catch (reason) {
+      setError(String(reason));
+    }
+  }
+  async function setupOllama() {
+    setError("");
+    try {
+      setJob(
+        await request<Job>("/services/ollama/setup", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({}),
         }),
       );
     } catch (reason) {
@@ -248,19 +298,19 @@ export function WebStudio() {
     busy = job && ["queued", "running"].includes(job.status);
   return (
     <section className="web-studio">
-      <nav aria-label="Studio views">
+      <nav aria-label={vi.aria.studioViews}>
         {views.map((item) => (
           <button
             key={item}
             className={view === item ? "active" : ""}
             onClick={() => setView(item)}
           >
-            {item}
+            {vi.views[item]}
           </button>
         ))}
       </nav>
       <div className="studio-content">
-        <h2>{view}</h2>
+        <h2>{vi.views[view]}</h2>
         {error && <p className="inline-error">{error}</p>}
         {job && (
           <div
@@ -270,9 +320,9 @@ export function WebStudio() {
             aria-valuenow={Math.round(job.progress * 100)}
           >
             <b>
-              {job.operation}: {job.status}
+              {operationLabel(job.operation)}: {vi.status[job.status]}
             </b>{" "}
-            · {job.current_stage} · {Math.round(job.progress * 100)}% ·{" "}
+            · {stageLabel(job.current_stage)} · {Math.round(job.progress * 100)}% ·{" "}
             {job.error ?? job.message}
           </div>
         )}
@@ -289,9 +339,9 @@ export function WebStudio() {
             ))}
             {project && (
               <>
-                <h3>Project</h3>
+                <h3>{vi.sections.project}</h3>
                 <pre>{JSON.stringify(data.project ?? project, null, 2)}</pre>
-                <h3>Tác vụ gần đây</h3>
+                <h3>{vi.sections.recentJobs}</h3>
                 <pre>{JSON.stringify(data.jobs ?? [], null, 2)}</pre>
               </>
             )}
@@ -319,16 +369,16 @@ export function WebStudio() {
         {view === "Article" && (
           <div className="studio-resource-grid">
             <section>
-              <h3>Nguồn</h3>
-              <pre>{JSON.stringify(data.source ?? "Chưa nhập nguồn", null, 2)}</pre>
+              <h3>{vi.sections.source}</h3>
+              <pre>{JSON.stringify(data.source ?? vi.messages.noSource, null, 2)}</pre>
             </section>
             <section>
-              <h3>Nội dung</h3>
-              <pre>{data.article ?? "Chưa tạo article"}</pre>
+              <h3>{vi.sections.content}</h3>
+              <pre>{data.article ?? vi.messages.noArticle}</pre>
             </section>
             <section>
-              <h3>Hình ảnh</h3>
-              <pre>{JSON.stringify(data.images ?? "Chưa trích xuất hình ảnh", null, 2)}</pre>
+              <h3>{vi.sections.images}</h3>
+              <pre>{JSON.stringify(data.images ?? vi.messages.noImages, null, 2)}</pre>
             </section>
           </div>
         )}
@@ -338,9 +388,9 @@ export function WebStudio() {
               disabled={!project || busy}
               onClick={() => void action("facts")}
             >
-              Generate Facts
+              {vi.actions.generateFacts}
             </button>
-            <pre>{JSON.stringify(data.facts ?? "Chưa tạo facts", null, 2)}</pre>
+            <pre>{JSON.stringify(data.facts ?? vi.messages.noFacts, null, 2)}</pre>
           </>
         )}
         {view === "Script" && (
@@ -349,10 +399,10 @@ export function WebStudio() {
               disabled={!project || busy}
               onClick={() => void action("script")}
             >
-              Generate Script
+              {vi.actions.generateScript}
             </button>
             <pre>
-              {JSON.stringify(data.script ?? "Chưa tạo script", null, 2)}
+              {JSON.stringify(data.script ?? vi.messages.noScript, null, 2)}
             </pre>
           </>
         )}
@@ -362,17 +412,17 @@ export function WebStudio() {
               disabled={!project || busy}
               onClick={() => void action("storyboard")}
             >
-              Generate Storyboard
+              {vi.actions.generateStoryboard}
             </button>
             <pre>
-              {JSON.stringify(storyboard ?? "Chưa tạo storyboard", null, 2)}
+              {JSON.stringify(storyboard ?? vi.messages.noStoryboard, null, 2)}
             </pre>
           </>
         )}
         {view === "Scene Editor" && storyboard && (
           <div className="studio-actions">
             <select
-              aria-label="Scene"
+              aria-label={vi.fields.scene}
               value={sceneId}
               onChange={(event) => setSceneId(event.target.value)}
             >
@@ -383,19 +433,19 @@ export function WebStudio() {
             {scene && (
               <>
                 <input
-                  aria-label="Scene type"
+                  aria-label={vi.fields.sceneType}
                   value={scene.type}
                   onChange={(event) => patchScene({ type: event.target.value })}
                 />
                 <textarea
-                  aria-label="Narration"
+                  aria-label={vi.fields.narration}
                   value={scene.narration}
                   onChange={(event) =>
                     patchScene({ narration: event.target.value })
                   }
                 />
                 <input
-                  aria-label="Fact references"
+                  aria-label={vi.fields.factRefs}
                   value={scene.fact_refs.join(", ")}
                   onChange={(event) =>
                     patchScene({
@@ -407,7 +457,7 @@ export function WebStudio() {
                   }
                 />
                 <input
-                  aria-label="Duration"
+                  aria-label={vi.fields.duration}
                   type="number"
                   min="0.1"
                   step="0.1"
@@ -417,33 +467,33 @@ export function WebStudio() {
                   }
                 />
                 <input
-                  aria-label="Visual type"
+                  aria-label={vi.fields.visualType}
                   value={scene.visual.type}
                   onChange={(event) =>
                     patchScene({}, { type: event.target.value })
                   }
                 />
                 <input
-                  aria-label="Visual prompt"
+                  aria-label={vi.fields.visualPrompt}
                   value={scene.visual.prompt ?? ""}
                   onChange={(event) =>
                     patchScene({}, { prompt: event.target.value || null })
                   }
                 />
                 <input
-                  aria-label="Template"
+                  aria-label={vi.fields.template}
                   value={scene.visual.template}
                   onChange={(event) =>
                     patchScene({}, { template: event.target.value })
                   }
                 />
                 <button disabled={busy} onClick={() => void saveScene()}>
-                  Lưu scene
+                  {vi.actions.saveScene}
                 </button>
                 {[
-                  ["tts", "Regenerate TTS"],
-                  ["visual", "Regenerate Visual"],
-                  ["scene", "Render Scene"],
+                  ["tts", vi.actions.regenerateTts],
+                  ["visual", vi.actions.regenerateVisual],
+                  ["scene", vi.actions.renderScene],
                 ].map(([op, label]) => (
                   <button
                     key={op}
@@ -463,7 +513,7 @@ export function WebStudio() {
               disabled={!project || busy}
               onClick={() => void action("preview")}
             >
-              Render Preview
+              {vi.actions.renderPreview}
             </button>
             {data.outputs?.preview?.exists && !data.outputs.preview.stale ? (
               <video
@@ -473,15 +523,15 @@ export function WebStudio() {
             ) : (
               <p>
                 {data.outputs?.preview?.stale
-                  ? "Preview cần render lại sau chỉnh sửa"
-                  : "Chưa có preview"}
+                  ? vi.messages.previewStale
+                  : vi.messages.noPreview}
               </p>
             )}
             <button
               disabled={!project || busy}
               onClick={() => void action("render")}
             >
-              Final Render
+              {vi.actions.finalRender}
             </button>
             {data.outputs?.final?.exists && !data.outputs.final.stale && (
               <video
@@ -489,7 +539,7 @@ export function WebStudio() {
                 src={`${base}${data.outputs.final.media_url}?v=${encodeURIComponent(data.outputs.final.modified_at)}`}
               />
             )}
-            {data.outputs?.final?.stale && <p>Video cuối cần render lại</p>}
+            {data.outputs?.final?.stale && <p>{vi.messages.finalStale}</p>}
           </>
         )}
         {view === "QA" && (
@@ -498,9 +548,9 @@ export function WebStudio() {
               disabled={!project || busy}
               onClick={() => void action("validate")}
             >
-              Run QA
+              {vi.actions.runQa}
             </button>
-            <pre>{JSON.stringify(data.qa ?? "QA chưa chạy", null, 2)}</pre>
+            <pre>{JSON.stringify(data.qa ?? vi.messages.qaPending, null, 2)}</pre>
           </>
         )}
         {view === "Services" && (
@@ -512,7 +562,10 @@ export function WebStudio() {
                 )
               }
             >
-              Refresh services
+              {vi.actions.refreshServices}
+            </button>
+            <button disabled={busy} onClick={() => void setupOllama()}>
+              {vi.actions.setupOllama}
             </button>
             {Array.isArray(data.services) ? (
               <div className="studio-resource-grid">
@@ -525,7 +578,7 @@ export function WebStudio() {
                 ))}
               </div>
             ) : (
-              <p>Chưa kiểm tra dịch vụ</p>
+              <p>{vi.messages.servicesUnchecked}</p>
             )}
           </>
         )}

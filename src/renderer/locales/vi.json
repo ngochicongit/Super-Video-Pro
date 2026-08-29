@@ -1,0 +1,94 @@
+{
+  "views": {
+    "Projects": "Dự án",
+    "Create Project": "Tạo dự án",
+    "Article": "Bài viết",
+    "Facts": "Dữ kiện",
+    "Script": "Kịch bản",
+    "Storyboard": "Bảng phân cảnh",
+    "Scene Editor": "Biên tập cảnh",
+    "Preview": "Xem trước",
+    "QA": "Kiểm tra chất lượng",
+    "Settings": "Cài đặt",
+    "Services": "Dịch vụ"
+  },
+  "actions": {
+    "generateFacts": "Tạo dữ kiện",
+    "generateScript": "Tạo kịch bản",
+    "generateStoryboard": "Tạo bảng phân cảnh",
+    "regenerateTts": "Tạo lại giọng đọc",
+    "regenerateVisual": "Tạo lại hình ảnh",
+    "renderScene": "Kết xuất cảnh",
+    "renderPreview": "Kết xuất bản xem trước",
+    "finalRender": "Kết xuất video hoàn chỉnh",
+    "runQa": "Chạy kiểm tra chất lượng",
+    "saveScene": "Lưu cảnh",
+    "refreshServices": "Kiểm tra lại dịch vụ",
+    "setupOllama": "Tự động cài Ollama và model nhẹ"
+  },
+  "fields": {
+    "scene": "Cảnh",
+    "sceneType": "Loại cảnh",
+    "narration": "Lời thuyết minh",
+    "factRefs": "Tham chiếu dữ kiện",
+    "duration": "Thời lượng",
+    "visualType": "Loại hình ảnh",
+    "visualPrompt": "Mô tả hình ảnh",
+    "template": "Mẫu trình bày"
+  },
+  "sections": {
+    "project": "Dự án",
+    "recentJobs": "Tác vụ gần đây",
+    "source": "Nguồn",
+    "content": "Nội dung",
+    "images": "Hình ảnh"
+  },
+  "messages": {
+    "noSource": "Chưa nhập nguồn",
+    "noArticle": "Chưa tạo bài viết",
+    "noImages": "Chưa trích xuất hình ảnh",
+    "noFacts": "Chưa tạo dữ kiện",
+    "noScript": "Chưa tạo kịch bản",
+    "noStoryboard": "Chưa tạo bảng phân cảnh",
+    "previewStale": "Bản xem trước cần kết xuất lại sau chỉnh sửa",
+    "noPreview": "Chưa có bản xem trước",
+    "finalStale": "Video hoàn chỉnh cần kết xuất lại",
+    "qaPending": "Chưa chạy kiểm tra chất lượng",
+    "servicesUnchecked": "Chưa kiểm tra dịch vụ",
+    "ollamaCheckFailed": "Không thể kiểm tra Ollama. Hãy mở mục Dịch vụ và thử lại."
+  },
+  "aria": {
+    "studioViews": "Các mục của Studio"
+  },
+  "status": {
+    "queued": "Đang chờ",
+    "running": "Đang thực hiện",
+    "completed": "Hoàn tất",
+    "failed": "Thất bại"
+  },
+  "operations": {
+    "ingest": "Nhập bài viết",
+    "facts": "Tạo dữ kiện",
+    "script": "Tạo kịch bản",
+    "storyboard": "Tạo bảng phân cảnh",
+    "tts": "Tạo giọng đọc",
+    "align": "Căn chỉnh phụ đề",
+    "visual": "Tạo hình ảnh",
+    "scene": "Kết xuất cảnh",
+    "preview": "Kết xuất xem trước",
+    "validate": "Kiểm tra chất lượng",
+    "render": "Kết xuất hoàn chỉnh",
+    "ollama-setup": "Thiết lập Ollama"
+  },
+  "stages": {
+    "queued": "Đang xếp hàng",
+    "execute": "Đang xử lý",
+    "verify": "Đang xác minh kết quả",
+    "complete": "Đã hoàn tất",
+    "checking": "Đang kiểm tra",
+    "installing": "Đang cài đặt",
+    "starting": "Đang khởi động",
+    "downloading": "Đang tải model",
+    "verifying": "Đang xác minh model"
+  }
+}

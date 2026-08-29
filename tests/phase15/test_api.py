@@ -7,6 +7,24 @@ from newsvid.storyboards import StoryboardCoordinator
 from newsvid_ingest.models import ArticleImage, ImageManifest
 from newsvid.checkpoint import CheckpointStore
 from newsvid.schemas import PipelineStage, StageStatus
+import time
+
+
+class FakeOllamaSetup:
+    def setup(self, model, progress):
+        progress(.12, "ollama:installing", "Đang cài Ollama")
+        progress(.64, "ollama:downloading", "Đang tải model 42%")
+        progress(.97, "ollama:verifying", "Đang xác minh model")
+        return {"status": "ready", "model": model, "base_url": "http://127.0.0.1:11434"}
+
+
+def wait_for_job(client, job_id):
+    for _ in range(100):
+        job = client.get(f"/jobs/{job_id}").json()
+        if job["status"] in {"completed", "failed"}:
+            return job
+        time.sleep(.01)
+    raise AssertionError("job did not finish")
 
 def test_projects_and_service_api(tmp_path):
     client = TestClient(create_app(tmp_path))
@@ -18,6 +36,17 @@ def test_projects_and_service_api(tmp_path):
     job = client.post(f"/projects/{project_id}/validate").json()
     assert job["status"] in {"queued", "running", "completed"}
     assert client.get(f"/jobs/{job['job_id']}").status_code == 200
+
+
+def test_ollama_setup_is_a_real_progress_job_and_persists_selected_model(tmp_path):
+    client = TestClient(create_app(tmp_path, {"ollama_setup": FakeOllamaSetup()}))
+    response = client.post("/services/ollama/setup", json={"model": "qwen2.5:3b"})
+    assert response.status_code == 200
+    completed = wait_for_job(client, response.json()["job_id"])
+    assert completed["status"] == "completed"
+    assert completed["current_stage"] == "ollama-setup:complete"
+    assert completed["result"]["model"] == "qwen2.5:3b"
+    assert (tmp_path / ".service-settings.json").read_text(encoding="utf-8").find("qwen2.5:3b") >= 0
 
 def test_storyboard_save_validates_refs_and_preserves_full_scene(tmp_path):
     manager=ProjectManager(tmp_path); project=manager.create("Studio save"); root=manager.project_dir(project.id)

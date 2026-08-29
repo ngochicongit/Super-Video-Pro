@@ -27,36 +27,49 @@ from .checkpoint import CheckpointStore
 from .schemas import PipelineStage, StageStatus
 from .alignment import AlignmentCoordinator
 from newsvid_brain import WhisperXConfig, WhisperXProvider, SubtitleLayout
+from .ollama_setup import OllamaSetupCoordinator, save_service_settings
 
 def create_app(projects_dir: Path | None = None, overrides: dict[str, object] | None = None):
     from fastapi import FastAPI, HTTPException
     from fastapi.responses import FileResponse, PlainTextResponse
     from fastapi.middleware.cors import CORSMiddleware
     config = load_config(); manager = ProjectManager(projects_dir or config.projects_dir); overrides = overrides or {}
+    service_settings = manager.root / ".service-settings.json"
+    if service_settings.is_file():
+        try:
+            saved_services = json.loads(service_settings.read_text(encoding="utf-8"))
+            if saved_services.get("ollama_model"):
+                config.services.ollama_model = str(saved_services["ollama_model"])
+        except (OSError, ValueError, TypeError):
+            pass
     app = FastAPI(title="NewsVid API", version="0.15.0")
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     @app.get("/health")
     def health(): return {"status": "ok", "service": "newsvid"}
     jobs: dict[str, dict] = {}
     jobs_lock = threading.RLock()
-    def run_job(project_id: str, operation: str, task):
+    def run_job(project_id: str, operation: str, task, *, reports_progress: bool = False):
         job_id = str(uuid.uuid4()); now = datetime.now(timezone.utc).isoformat()
         with jobs_lock:
-            jobs[job_id] = {"job_id": job_id, "project_id": project_id, "operation": operation, "status": "queued", "progress": 0, "current_stage": "queued", "message": "Queued", "error": None, "created_at": now, "started_at": None, "completed_at": None}
+            jobs[job_id] = {"job_id": job_id, "project_id": project_id, "operation": operation, "status": "queued", "progress": 0, "current_stage": "queued", "message": "Đang chờ xử lý", "error": None, "created_at": now, "started_at": None, "completed_at": None}
         def worker():
             with jobs_lock:
-                jobs[job_id].update(status="running", progress=0.05, current_stage=f"{operation}:execute", started_at=datetime.now(timezone.utc).isoformat(), message="Executing pipeline coordinator")
+                jobs[job_id].update(status="running", progress=0.05, current_stage=f"{operation}:execute", started_at=datetime.now(timezone.utc).isoformat(), message="Đang thực hiện quy trình")
             try:
-                result = task()
+                def update(progress: float, stage: str, message: str):
+                    with jobs_lock:
+                        jobs[job_id].update(progress=max(.05, min(.94, progress)),
+                                            current_stage=stage, message=message)
+                result = task(update) if reports_progress else task()
                 with jobs_lock:
-                    jobs[job_id].update(progress=0.95, current_stage=f"{operation}:verify", message="Verifying persisted output")
+                    jobs[job_id].update(progress=0.95, current_stage=f"{operation}:verify", message="Đang xác minh kết quả đã lưu")
                 # Coordinators return only after schema/media validation and atomic persistence.
                 with jobs_lock:
                     jobs[job_id]["result"] = result
-                    jobs[job_id].update(status="completed", progress=1, current_stage=f"{operation}:complete", message="Completed and verified", completed_at=datetime.now(timezone.utc).isoformat())
+                    jobs[job_id].update(status="completed", progress=1, current_stage=f"{operation}:complete", message="Đã hoàn tất và xác minh", completed_at=datetime.now(timezone.utc).isoformat())
             except Exception as exc:
                 with jobs_lock:
-                    jobs[job_id].update(status="failed", error=f"{type(exc).__name__}: {exc}", message="Failed", completed_at=datetime.now(timezone.utc).isoformat())
+                    jobs[job_id].update(status="failed", error=f"{type(exc).__name__}: {exc}", message="Thực hiện thất bại", completed_at=datetime.now(timezone.utc).isoformat())
         threading.Thread(target=worker, daemon=True).start()
         with jobs_lock: return dict(jobs[job_id])
     @app.get("/projects")
@@ -124,6 +137,18 @@ def create_app(projects_dir: Path | None = None, overrides: dict[str, object] | 
         return FileResponse(path, media_type="video/mp4", filename=name)
     @app.get("/services/status")
     def services(): return [s.__dict__ for s in collect_status(config)]
+    @app.post("/services/ollama/setup")
+    def setup_ollama(body: dict | None = None):
+        model = str((body or {}).get("model") or config.services.ollama_setup_model).strip()
+        if not model or len(model) > 120 or any(char.isspace() for char in model):
+            raise HTTPException(422, "Tên model Ollama không hợp lệ")
+        coordinator = overrides.get("ollama_setup") or OllamaSetupCoordinator(config.services.ollama_url)
+        def setup(update):
+            result = coordinator.setup(model, update)
+            config.services.ollama_model = model
+            save_service_settings(service_settings, ollama_model=model)
+            return result
+        return run_job("system", "ollama-setup", setup, reports_progress=True)
     @app.get("/jobs/{job_id}")
     def job(job_id: str):
         with jobs_lock:
