@@ -129,6 +129,7 @@ class HyperFramesChromiumRenderer:
         try:
             result = self.runner(
                 command, check=True, capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
                 shell=False, cwd=self.root,
                 timeout=motion_render_timeout_seconds(spec.duration_seconds),
                 env=subprocess_environment(self.node),
