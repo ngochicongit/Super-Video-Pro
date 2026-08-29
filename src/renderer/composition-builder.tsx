@@ -1,104 +1,1292 @@
-import {useEffect,useMemo,useRef,useState} from "react";
-import {z} from "zod";
-import {Timeline,type TimelineState} from "@xzdarcy/react-timeline-editor";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { z } from "zod";
+import { Timeline, type TimelineState } from "@xzdarcy/react-timeline-editor";
 import "@xzdarcy/react-timeline-editor/dist/react-timeline-editor.css";
-import {CompositionLogo} from "../shared/contracts";
-import {api,createWaveform,inspectCompositionFile,pickCompositionLogo} from "./api";
-import {t} from "./i18n";
-import {useAppStore} from "./store";
-import {boundedOverlayCenter,buildTimelineRows,editedDuration,frameSnap,previewAnimationDuration,reorderByTimelineStart,resizeSourceClip,type TimelineActionShape} from "./timeline-adapter";
+import { CompositionLogo } from "../shared/contracts";
+import {
+  api,
+  createWaveform,
+  inspectCompositionFile,
+  pickCompositionLogo,
+} from "./api";
+import { t } from "./i18n";
+import { useAppStore } from "./store";
+import {
+  boundedOverlayCenter,
+  buildTimelineRows,
+  editedDuration,
+  frameSnap,
+  previewAnimationDuration,
+  reorderByTimelineStart,
+  resizeSourceClip,
+  type TimelineActionShape,
+} from "./timeline-adapter";
 
-type Logo=z.infer<typeof CompositionLogo>&{id:string};
-type Clip={id:string;path:string;duration:number;width:number;height:number;trimStart:number;trimEnd:number;speed:number;waveformPath?:string};
-type Selection={kind:"video"|"audio"|"logo";id:string}|null;
-type TrackState={videoLocked:boolean;audioLocked:boolean;audioMuted:boolean;overlayLocked:boolean};
-type ProjectSnapshot={videos:Clip[];audio:Clip|null;audioVolume:number;logos:Logo[];name:string;tracks:TrackState};
-const positions:Logo["position"][]=["top-left","top-center","top-right","middle-left","center","middle-right","bottom-left","bottom-center","bottom-right"];
-const uid=()=>crypto.randomUUID();
-const basename=(path:string)=>path.split(/[\\/]/).pop()||path;
-const fileUrl=(path:string)=>encodeURI(`file:///${path.replaceAll("\\","/")}`);
-const clock=(seconds:number)=>`${Math.floor(seconds/60).toString().padStart(2,"0")}:${Math.floor(seconds%60).toString().padStart(2,"0")}`;
-const defaultLogo=(path:string):Logo=>({id:uid(),path,mode:"static",position:"bottom-right",width:220,opacity:1,speedX:120,speedY:90,hue:0,backgroundColor:"#000000",backgroundOpacity:0,padding:0,borderWidth:0,borderColor:"#ffffff",staticEffect:"none",fadeDuration:1,timelineStart:0});
-const clipDuration=(clip:Clip)=>Math.max(.01,(clip.trimEnd-clip.trimStart)/clip.speed);
+type Logo = z.infer<typeof CompositionLogo> & { id: string };
+type Clip = {
+  id: string;
+  path: string;
+  duration: number;
+  width: number;
+  height: number;
+  trimStart: number;
+  trimEnd: number;
+  speed: number;
+  waveformPath?: string;
+};
+type Selection = { kind: "video" | "audio" | "logo"; id: string } | null;
+type TrackState = {
+  videoLocked: boolean;
+  audioLocked: boolean;
+  audioMuted: boolean;
+  overlayLocked: boolean;
+};
+type ProjectSnapshot = {
+  videos: Clip[];
+  audio: Clip | null;
+  audioVolume: number;
+  logos: Logo[];
+  name: string;
+  tracks: TrackState;
+};
+const positions: Logo["position"][] = [
+  "top-left",
+  "top-center",
+  "top-right",
+  "middle-left",
+  "center",
+  "middle-right",
+  "bottom-left",
+  "bottom-center",
+  "bottom-right",
+];
+const uid = () => crypto.randomUUID();
+const basename = (path: string) => path.split(/[\\/]/).pop() || path;
+const fileUrl = (path: string) =>
+  encodeURI(`file:///${path.replaceAll("\\", "/")}`);
+const clock = (seconds: number) =>
+  `${Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0")}:${Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, "0")}`;
+const defaultLogo = (path: string): Logo => ({
+  id: uid(),
+  path,
+  mode: "static",
+  position: "bottom-right",
+  width: 220,
+  opacity: 1,
+  speedX: 120,
+  speedY: 90,
+  hue: 0,
+  backgroundColor: "#000000",
+  backgroundOpacity: 0,
+  padding: 0,
+  borderWidth: 0,
+  borderColor: "#ffffff",
+  staticEffect: "none",
+  fadeDuration: 1,
+  timelineStart: 0,
+});
+const clipDuration = (clip: Clip) =>
+  Math.max(0.01, (clip.trimEnd - clip.trimStart) / clip.speed);
 
-export function CompositionBuilder(){
-  const settings=useAppStore(state=>state.settings);
-  const [videos,setVideos]=useState<Clip[]>([]);
-  const [audio,setAudio]=useState<Clip|null>(null);
-  const [audioVolume,setAudioVolume]=useState(1);
-  const [tracks,setTracks]=useState<TrackState>({videoLocked:false,audioLocked:false,audioMuted:false,overlayLocked:false});
-  const [logos,setLogos]=useState<Logo[]>([]);
-  const [selection,setSelection]=useState<Selection>(null);
-  const [playhead,setPlayhead]=useState(0);
-  const [zoom,setZoom]=useState(1);
-  const [snapping,setSnapping]=useState(true);
-  const [name,setName]=useState("");
-  const [error,setError]=useState("");
-  const [message,setMessage]=useState("");
-  const [dragOverlay,setDragOverlay]=useState<string|null>(null);
-  const [history,setHistory]=useState<ProjectSnapshot[]>([]);
-  const [future,setFuture]=useState<ProjectSnapshot[]>([]);
-  const preview=useRef<HTMLVideoElement>(null);
-  const professionalTimeline=useRef<TimelineState>(null);
-  const timelineInteraction=useRef<{kind:"video"|"logo";id:string;actionStart:number;actionEnd:number;clip?:Clip}|null>(null);
-  const logoEditActive=useRef(false);
-  const previewCanvas=useRef<HTMLDivElement>(null);
-  const [overlayBounds,setOverlayBounds]=useState({left:0,top:0,width:0,height:0});
-  const duration=useMemo(()=>videos.reduce((sum,item)=>sum+clipDuration(item),0),[videos]);
-  const selectedVideo=selection?.kind==="video"?videos.find(item=>item.id===selection.id):undefined;
-  const selectedLogo=selection?.kind==="logo"?logos.find(item=>item.id===selection.id):undefined;
-  const currentVideo=useMemo(()=>{let cursor=0;for(const clip of videos){const editedDuration=clipDuration(clip);if(playhead<=cursor+editedDuration)return{clip,start:cursor,offset:clip.trimStart+Math.max(0,playhead-cursor)*clip.speed};cursor+=editedDuration;}const clip=videos[videos.length-1];return clip?{clip,start:Math.max(0,duration-clipDuration(clip)),offset:clip.trimEnd}:null;},[videos,playhead,duration]);
-  const timelineRows=useMemo(()=>buildTimelineRows(videos,audio,logos,duration,tracks,selection?.id),[videos,audio,logos,duration,tracks,selection?.id]);
-  useEffect(()=>{const element=preview.current;if(!element||!currentVideo)return;if(Math.abs(element.currentTime-currentVideo.offset)>.12)element.currentTime=Math.min(currentVideo.offset,currentVideo.clip.trimEnd);},[playhead,currentVideo?.clip.id,currentVideo?.offset,currentVideo?.clip.trimEnd]);
-  useEffect(()=>{const canvas=previewCanvas.current,video=preview.current;if(!canvas||!video)return;const sync=()=>{const outer=canvas.getBoundingClientRect(),inner=video.getBoundingClientRect();setOverlayBounds({left:inner.left-outer.left,top:inner.top-outer.top,width:inner.width,height:inner.height});};const observer=new ResizeObserver(sync);observer.observe(canvas);observer.observe(video);sync();return()=>observer.disconnect();},[currentVideo?.clip.id]);
-  useEffect(()=>{professionalTimeline.current?.setTime(playhead);},[playhead]);
-  const snapshot=():ProjectSnapshot=>({videos,audio,audioVolume,logos,name,tracks});
-  function restore(project:ProjectSnapshot){setVideos(project.videos);setAudio(project.audio);setAudioVolume(project.audioVolume);setLogos(project.logos);setName(project.name);setTracks(project.tracks??{videoLocked:false,audioLocked:false,audioMuted:false,overlayLocked:false});setSelection(null);setPlayhead(0);}
-  function checkpoint(){setHistory(current=>[...current.slice(-39),snapshot()]);setFuture([]);}
-  function undo(){const previous=history.at(-1);if(!previous)return;setFuture(current=>[snapshot(),...current].slice(0,40));setHistory(current=>current.slice(0,-1));restore(previous);}
-  function redo(){const next=future[0];if(!next)return;setHistory(current=>[...current,snapshot()].slice(-40));setFuture(current=>current.slice(1));restore(next);}
-  function saveProject(){localStorage.setItem("supercut-project-v1",JSON.stringify(snapshot()));setMessage("Đã lưu project trên thiết bị này.");}
-  function loadProject(){try{const raw=localStorage.getItem("supercut-project-v1");if(!raw)throw new Error("Chưa có project đã lưu");checkpoint();restore(JSON.parse(raw) as ProjectSnapshot);setMessage("Đã khôi phục project.");}catch(reason){setError(reason instanceof Error?reason.message:String(reason));}}
-  useEffect(()=>{const keyboard=(event:KeyboardEvent)=>{if(!(event.ctrlKey||event.metaKey))return;if(event.key.toLowerCase()==="z"){event.preventDefault();event.shiftKey?redo():undo();}if(event.key.toLowerCase()==="y"){event.preventDefault();redo();}};window.addEventListener("keydown",keyboard);return()=>window.removeEventListener("keydown",keyboard);});
-  async function metadata(path:string){const info=await inspectCompositionFile(path);const mediaDuration=info.duration||1;return{id:uid(),path,duration:mediaDuration,width:info.width,height:info.height,trimStart:0,trimEnd:mediaDuration,speed:1};}
-  async function addVideos(){try{const paths=await api.compositions.pickVideos();const clips=await Promise.all(paths.map(metadata));if(clips.length)checkpoint();setVideos(current=>[...current,...clips].slice(0,20));if(clips[0])setSelection({kind:"video",id:clips[0].id});}catch(reason){setError(reason instanceof Error?reason.message:String(reason));}}
-  async function chooseAudio(){const path=await api.compositions.pick("audio");if(!path)return;try{const clip=await metadata(path);const waveform=await createWaveform(path).catch(()=>null);const ready={...clip,waveformPath:waveform?.path};checkpoint();setAudio(ready);setSelection({kind:"audio",id:ready.id});}catch(reason){setError(reason instanceof Error?reason.message:String(reason));}}
-  async function addLogo(){if(logos.length>=8)return;const path=await pickCompositionLogo();if(!path)return;const logo=defaultLogo(path);checkpoint();setLogos(current=>[...current,logo]);setSelection({kind:"logo",id:logo.id});}
-  function beginLogoEdit(){if(logoEditActive.current)return;checkpoint();logoEditActive.current=true;}
-  function endLogoEdit(){logoEditActive.current=false;}
-  function updateLogo(patch:Partial<Logo>){if(selection?.kind!=="logo"||tracks.overlayLocked)return;if(!logoEditActive.current)checkpoint();setLogos(current=>current.map(item=>item.id===selection.id?{...item,...patch}:item));}
-  function updateVideo(patch:Partial<Clip>){if(selection?.kind!=="video"||tracks.videoLocked)return;checkpoint();setVideos(current=>current.map(item=>item.id===selection.id?{...item,...patch}:item));}
-  function removeSelection(){if(!selection||(selection.kind==="video"&&tracks.videoLocked)||(selection.kind==="audio"&&tracks.audioLocked)||(selection.kind==="logo"&&tracks.overlayLocked))return;checkpoint();if(selection.kind==="video")setVideos(current=>current.filter(item=>item.id!==selection.id));if(selection.kind==="logo")setLogos(current=>current.filter(item=>item.id!==selection.id));if(selection.kind==="audio")setAudio(null);setSelection(null);}
-  function splitClip(){if(tracks.videoLocked||selection?.kind!=="video"||videos.length>=20)return;const index=videos.findIndex(item=>item.id===selection.id);if(index<0)return;const clip=videos[index]!;const start=videos.slice(0,index).reduce((sum,item)=>sum+clipDuration(item),0);const relative=playhead-start;if(relative<=.05||relative>=clipDuration(clip)-.05){setError("Đặt playhead vào bên trong clip để tách.");return;}const sourceTime=clip.trimStart+relative*clip.speed;const right={...clip,id:uid(),trimStart:sourceTime};checkpoint();setVideos(current=>[...current.slice(0,index),{...clip,trimEnd:sourceTime},right,...current.slice(index+1)]);setSelection({kind:"video",id:right.id});}
-  function moveOverlay(event:React.PointerEvent<HTMLImageElement>,id:string){if(tracks.overlayLocked||dragOverlay!==id)return;const rect=event.currentTarget.parentElement?.getBoundingClientRect(),image=event.currentTarget.getBoundingClientRect();if(!rect||!rect.width||!rect.height)return;const {x,y}=boundedOverlayCenter(event.clientX,event.clientY,rect,image);setLogos(current=>current.map(item=>item.id===id?{...item,xPercent:x,yPercent:y}:item));}
-  function logoAnimationDuration(logo:Logo){return previewAnimationDuration(overlayBounds,Math.min(52,logo.width/8),logo.mode,logo.speedX,logo.speedY);}
-  function seek(value:number){let target=Math.max(0,Math.min(value,duration));if(snapping){const boundaries=[0,duration];let cursor=0;for(const clip of videos){cursor+=clipDuration(clip);boundaries.push(cursor);}const nearest=boundaries.reduce((best,item)=>Math.abs(item-target)<Math.abs(best-target)?item:best,boundaries[0]??0);target=Math.abs(nearest-target)<=.12?nearest:Math.round(target*30)/30;}setPlayhead(target);}
-  function stepFrame(direction:-1|1){seek(playhead+direction/30);}
-  async function togglePreviewFullscreen(){const canvas=previewCanvas.current;if(!canvas)return;if(document.fullscreenElement)await document.exitFullscreen();else await canvas.requestFullscreen();requestAnimationFrame(()=>window.dispatchEvent(new Event("resize")));}
-  function selectTimelineAction(action:TimelineActionShape){const [kind,id]=action.id.split(":") as ["video"|"audio"|"logo",string];setSelection({kind,id});}
-  function beginTimelineInteraction(action:TimelineActionShape){const [kind,id]=action.id.split(":") as ["video"|"logo",string];if(kind!=="video"&&kind!=="logo")return;checkpoint();timelineInteraction.current={kind,id,actionStart:action.start,actionEnd:action.end,clip:kind==="video"?videos.find(item=>item.id===id):undefined};setSelection({kind,id});}
-  function resizeTimelineAction(action:TimelineActionShape,start:number,end:number,dir:"left"|"right"){
-    const baseline=timelineInteraction.current;if(!baseline||baseline.id!==action.id.split(":")[1])return false;
-    if(baseline.kind==="logo"){setLogos(current=>current.map(item=>item.id===baseline.id?{...item,timelineStart:frameSnap(Math.max(0,start)),timelineEnd:frameSnap(Math.max(start+1/30,end))}:item));return true;}
-    const clip=baseline.clip;if(!clip)return false;setVideos(current=>current.map(item=>item.id===baseline.id?resizeSourceClip(clip,baseline.actionStart,baseline.actionEnd,start,end,dir):item));return true;
+export function CompositionBuilder() {
+  const settings = useAppStore((state) => state.settings);
+  const [videos, setVideos] = useState<Clip[]>([]);
+  const [audio, setAudio] = useState<Clip | null>(null);
+  const [audioVolume, setAudioVolume] = useState(1);
+  const [tracks, setTracks] = useState<TrackState>({
+    videoLocked: false,
+    audioLocked: false,
+    audioMuted: false,
+    overlayLocked: false,
+  });
+  const [logos, setLogos] = useState<Logo[]>([]);
+  const [selection, setSelection] = useState<Selection>(null);
+  const [playhead, setPlayhead] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [snapping, setSnapping] = useState(true);
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [dragOverlay, setDragOverlay] = useState<string | null>(null);
+  const [history, setHistory] = useState<ProjectSnapshot[]>([]);
+  const [future, setFuture] = useState<ProjectSnapshot[]>([]);
+  const preview = useRef<HTMLVideoElement>(null);
+  const professionalTimeline = useRef<TimelineState>(null);
+  const timelineInteraction = useRef<{
+    kind: "video" | "logo";
+    id: string;
+    actionStart: number;
+    actionEnd: number;
+    clip?: Clip;
+  } | null>(null);
+  const logoEditActive = useRef(false);
+  const previewCanvas = useRef<HTMLDivElement>(null);
+  const [overlayBounds, setOverlayBounds] = useState({
+    left: 0,
+    top: 0,
+    width: 0,
+    height: 0,
+  });
+  const duration = useMemo(
+    () => videos.reduce((sum, item) => sum + clipDuration(item), 0),
+    [videos],
+  );
+  const selectedVideo =
+    selection?.kind === "video"
+      ? videos.find((item) => item.id === selection.id)
+      : undefined;
+  const selectedLogo =
+    selection?.kind === "logo"
+      ? logos.find((item) => item.id === selection.id)
+      : undefined;
+  const currentVideo = useMemo(() => {
+    let cursor = 0;
+    for (const clip of videos) {
+      const editedDuration = clipDuration(clip);
+      if (playhead <= cursor + editedDuration)
+        return {
+          clip,
+          start: cursor,
+          offset: clip.trimStart + Math.max(0, playhead - cursor) * clip.speed,
+        };
+      cursor += editedDuration;
+    }
+    const clip = videos[videos.length - 1];
+    return clip
+      ? {
+          clip,
+          start: Math.max(0, duration - clipDuration(clip)),
+          offset: clip.trimEnd,
+        }
+      : null;
+  }, [videos, playhead, duration]);
+  const timelineRows = useMemo(
+    () =>
+      buildTimelineRows(videos, audio, logos, duration, tracks, selection?.id),
+    [videos, audio, logos, duration, tracks, selection?.id],
+  );
+  useEffect(() => {
+    const element = preview.current;
+    if (!element || !currentVideo) return;
+    if (Math.abs(element.currentTime - currentVideo.offset) > 0.12)
+      element.currentTime = Math.min(
+        currentVideo.offset,
+        currentVideo.clip.trimEnd,
+      );
+  }, [
+    playhead,
+    currentVideo?.clip.id,
+    currentVideo?.offset,
+    currentVideo?.clip.trimEnd,
+  ]);
+  useEffect(() => {
+    const canvas = previewCanvas.current,
+      video = preview.current;
+    if (!canvas || !video) return;
+    const sync = () => {
+      const outer = canvas.getBoundingClientRect(),
+        inner = video.getBoundingClientRect();
+      setOverlayBounds({
+        left: inner.left - outer.left,
+        top: inner.top - outer.top,
+        width: inner.width,
+        height: inner.height,
+      });
+    };
+    const observer = new ResizeObserver(sync);
+    observer.observe(canvas);
+    observer.observe(video);
+    sync();
+    return () => observer.disconnect();
+  }, [currentVideo?.clip.id]);
+  useEffect(() => {
+    professionalTimeline.current?.setTime(playhead);
+  }, [playhead]);
+  const snapshot = (): ProjectSnapshot => ({
+    videos,
+    audio,
+    audioVolume,
+    logos,
+    name,
+    tracks,
+  });
+  function restore(project: ProjectSnapshot) {
+    setVideos(project.videos);
+    setAudio(project.audio);
+    setAudioVolume(project.audioVolume);
+    setLogos(project.logos);
+    setName(project.name);
+    setTracks(
+      project.tracks ?? {
+        videoLocked: false,
+        audioLocked: false,
+        audioMuted: false,
+        overlayLocked: false,
+      },
+    );
+    setSelection(null);
+    setPlayhead(0);
   }
-  function moveTimelineAction(action:TimelineActionShape,start:number,end:number){const [kind,id]=action.id.split(":");if(kind!=="logo")return true;const length=Math.max(1/30,end-start),nextStart=frameSnap(Math.max(0,start));setLogos(current=>current.map(item=>item.id===id?{...item,timelineStart:nextStart,timelineEnd:Math.min(duration,nextStart+length)}:item));return true;}
-  function endTimelineMove(action:TimelineActionShape,start:number){const [kind,id]=action.id.split(":");if(kind==="video")setVideos(current=>reorderByTimelineStart(current,id!,start,current.map(editedDuration)));timelineInteraction.current=null;}
-  async function create(){if(!settings||!videos.length)return;setError("");setMessage("");const video=videos[0]!.path;const additionalVideos=videos.slice(1).map(item=>item.path);try{await api.compositions.create({videoPath:video,additionalVideoPaths:additionalVideos,videoEdits:videos.map(item=>({path:item.path,trimStart:item.trimStart,trimEnd:item.trimEnd,speed:item.speed})),audioPath:audio?.path,audioVolume:tracks.audioMuted?0:audioVolume,logos:logos.map(({id,...logo})=>({...logo,timelineEnd:logo.timelineEnd??duration})),destinationDir:settings.downloadDir,outputName:name.trim()||undefined});setMessage(t("composition_queued"));}catch(reason){setError(reason instanceof Error?reason.message:String(reason));}}
-  return <section className="video-editor">
-    <header className="editor-topbar"><div><strong>SuperCut Studio</strong><span>{videos.length?name||"Dự án chưa đặt tên":"Dự án mới"}</span></div><div className="editor-project-actions"><button onClick={undo} disabled={!history.length} title="Ctrl+Z">↶</button><button onClick={redo} disabled={!future.length} title="Ctrl+Y">↷</button><button onClick={()=>stepFrame(-1)} title="Lùi 1 frame">◀│</button><button onClick={()=>stepFrame(1)} title="Tiến 1 frame">│▶</button><button className={snapping?"active":""} onClick={()=>setSnapping(value=>!value)} title="Bật/tắt snapping">🧲</button><button onClick={splitClip} disabled={selection?.kind!=="video"||videos.length>=20}>✂ Tách</button><button onClick={saveProject}>Lưu</button><button onClick={loadProject}>Mở</button><div className="editor-project-name"><input value={name} maxLength={120} onChange={event=>setName(event.target.value)} placeholder="Tên video xuất"/><button className="primary-download" disabled={!videos.length} onClick={()=>void create()}>Xuất video</button></div></div></header>
-    <div className="editor-workspace">
-      <aside className="media-bin"><h3>Thư viện</h3><button onClick={()=>void addVideos()}>＋ Video</button><button onClick={()=>void chooseAudio()}>♫ Âm thanh</button><button onClick={()=>void addLogo()}>◇ Logo</button><div className="media-assets">{videos.map(item=><button className={selection?.id===item.id?"selected":""} key={item.id} onClick={()=>setSelection({kind:"video",id:item.id})}><i>▶</i><span>{basename(item.path)}<small>{clock(item.duration)} · {item.width}×{item.height}</small></span></button>)}{audio&&<button className={selection?.id===audio.id?"selected":""} onClick={()=>setSelection({kind:"audio",id:audio.id})}><i>♫</i><span>{basename(audio.path)}<small>{clock(audio.duration)}</small></span></button>}{logos.map(item=><button className={selection?.id===item.id?"selected":""} key={item.id} onClick={()=>setSelection({kind:"logo",id:item.id})}><i>◇</i><span>{basename(item.path)}<small>Logo overlay</small></span></button>)}</div></aside>
-      <main className="editor-stage"><div className="preview-canvas" ref={previewCanvas}>{currentVideo?<><video ref={preview} key={currentVideo.clip.id} src={fileUrl(currentVideo.clip.path)} onLoadedMetadata={event=>{event.currentTarget.currentTime=currentVideo.offset;requestAnimationFrame(()=>window.dispatchEvent(new Event("resize")));}} onTimeUpdate={event=>{if(!currentVideo)return;const source=Math.min(event.currentTarget.currentTime,currentVideo.clip.trimEnd);setPlayhead(Math.min(duration,currentVideo.start+(source-currentVideo.clip.trimStart)/currentVideo.clip.speed));}}/><div className="preview-overlays" style={{left:overlayBounds.left,top:overlayBounds.top,width:overlayBounds.width,height:overlayBounds.height}}>{logos.filter(logo=>playhead>=logo.timelineStart&&playhead<=(logo.timelineEnd??duration)).map(logo=>{const logoWidth=Math.min(52,logo.width/8);const style={width:`${logoWidth}%`,opacity:logo.opacity,filter:`hue-rotate(${logo.hue}deg)`,padding:logo.padding/5,border:`${(logo.borderWidth??0)*overlayBounds.width/Math.max(1,currentVideo.clip.width)}px solid ${logo.borderColor??"#ffffff"}`,boxSizing:"content-box",backgroundColor:`${logo.backgroundColor}${Math.round(logo.backgroundOpacity*255).toString(16).padStart(2,"0")}`,animationDuration:`${logoAnimationDuration(logo)}s`,"--logo-width":`${logoWidth}%`} as React.CSSProperties;return <img key={logo.id} src={fileUrl(logo.path)} className={selection?.id===logo.id?"selected":""} style={logo.xPercent===undefined?style:{...style,left:`${logo.xPercent}%`,top:`${logo.yPercent}%`,transform:"translate(-50%,-50%)"}} data-position={logo.xPercent===undefined?logo.position:"custom"} data-mode={logo.mode} onPointerDown={event=>{event.preventDefault();setSelection({kind:"logo",id:logo.id});if(tracks.overlayLocked)return;checkpoint();setDragOverlay(logo.id);event.currentTarget.setPointerCapture(event.pointerId);}} onPointerMove={event=>moveOverlay(event,logo.id)} onPointerUp={()=>setDragOverlay(null)}/>;})}</div></>:<div className="preview-empty"><b>▶</b><span>Thêm video để bắt đầu dựng</span></div>}</div><div className="transport"><button onClick={()=>seek(0)}>⏮</button><button onClick={()=>preview.current?.paused?void preview.current.play():preview.current?.pause()}>▶ / ❚❚</button><button aria-label="Phóng to preview" title="Phóng to video và logo" onClick={()=>void togglePreviewFullscreen()}>⛶</button><strong>{clock(playhead)} / {clock(duration)}</strong><input aria-label="Playhead" type="range" min="0" max={Math.max(duration,.01)} step=".01" value={Math.min(playhead,duration)} onChange={event=>seek(Number(event.target.value))}/></div></main>
-      <aside className="editor-inspector"><h3>Thuộc tính</h3>{!selection&&<p>Chọn một clip trên timeline để chỉnh sửa.</p>}
-        {selectedVideo&&<div className="inspector-fields"><strong>{basename(selectedVideo.path)}</strong><label>Trim đầu (giây)<input type="number" min="0" max={Math.max(0,selectedVideo.trimEnd-.01)} step=".05" value={selectedVideo.trimStart} onChange={event=>updateVideo({trimStart:Math.min(Number(event.target.value),selectedVideo.trimEnd-.01)})}/></label><label>Trim cuối (giây)<input type="number" min={selectedVideo.trimStart+.01} max={selectedVideo.duration} step=".05" value={selectedVideo.trimEnd} onChange={event=>updateVideo({trimEnd:Math.max(Number(event.target.value),selectedVideo.trimStart+.01)})}/></label><label>Tốc độ<select value={selectedVideo.speed} onChange={event=>updateVideo({speed:Number(event.target.value)})}>{[.25,.5,.75,1,1.25,1.5,2,3,4].map(value=><option value={value} key={value}>{value}×</option>)}</select></label><label>Thời lượng sau dựng<input value={`${clipDuration(selectedVideo).toFixed(2)} giây`} readOnly/></label><label>Độ phân giải<input value={`${selectedVideo.width} × ${selectedVideo.height}`} readOnly/></label></div>}
-        {selection?.kind==="audio"&&audio&&<div className="inspector-fields"><strong>{basename(audio.path)}</strong><label>Âm lượng<input disabled={tracks.audioLocked||tracks.audioMuted} type="range" min="0" max="2" step=".05" value={audioVolume} onChange={event=>{checkpoint();setAudioVolume(Number(event.target.value));}}/><output>{tracks.audioMuted?"Tắt tiếng":`${Math.round(audioVolume*100)}%`}</output></label><label>Thời lượng<input value={`${audio.duration.toFixed(2)} giây`} readOnly/></label></div>}
-        {selectedLogo&&<div className="inspector-fields"><strong>{basename(selectedLogo.path)}</strong><label>Bắt đầu (giây)<input type="number" min="0" max={Math.max(0,duration-.01)} step=".05" value={selectedLogo.timelineStart} onChange={event=>updateLogo({timelineStart:Number(event.target.value)})}/></label><label>Kết thúc (giây)<input type="number" min={selectedLogo.timelineStart+.01} max={Math.max(duration,.01)} step=".05" value={selectedLogo.timelineEnd??duration} onChange={event=>updateLogo({timelineEnd:Number(event.target.value)})}/></label><label>Chuyển động<select value={selectedLogo.mode} onChange={event=>updateLogo({mode:event.target.value as Logo["mode"]})}><option value="static">Cố định</option><option value="bounce">Bật nẩy</option><option value="horizontal">Trượt ngang</option><option value="vertical">Trượt dọc</option></select></label><label>Vị trí<select value={selectedLogo.position} onChange={event=>updateLogo({position:event.target.value as Logo["position"]})}>{positions.map(value=><option key={value}>{value}</option>)}</select></label><label>Kích thước<input type="range" min="24" max="640" value={selectedLogo.width} onPointerDown={beginLogoEdit} onPointerUp={endLogoEdit} onPointerCancel={endLogoEdit} onChange={event=>updateLogo({width:Number(event.target.value)})}/><output>{selectedLogo.width}px</output></label><label>Độ mờ<input type="range" min=".05" max="1" step=".05" value={selectedLogo.opacity} onPointerDown={beginLogoEdit} onPointerUp={endLogoEdit} onPointerCancel={endLogoEdit} onChange={event=>updateLogo({opacity:Number(event.target.value)})}/><output>{Math.round(selectedLogo.opacity*100)}%</output></label><label>Màu sắc<input aria-label="Màu sắc logo" type="range" min="-180" max="180" value={selectedLogo.hue} onPointerDown={beginLogoEdit} onPointerUp={endLogoEdit} onPointerCancel={endLogoEdit} onBlur={endLogoEdit} onChange={event=>updateLogo({hue:Number(event.target.value)})}/></label><label>Nền<input type="color" value={selectedLogo.backgroundColor} onChange={event=>updateLogo({backgroundColor:event.target.value})}/></label>{selectedLogo.mode!=="static"&&<><label>Tốc độ ngang<input type="number" min="1" max="600" value={selectedLogo.speedX} onChange={event=>updateLogo({speedX:Number(event.target.value)})}/></label><label>Tốc độ dọc<input type="number" min="1" max="600" value={selectedLogo.speedY} onChange={event=>updateLogo({speedY:Number(event.target.value)})}/></label></>}</div>}
-        {selectedLogo&&<div className="inspector-fields logo-border-controls"><label>Độ dày viền<input aria-label="Độ dày viền logo" type="range" min="0" max="32" step="1" value={selectedLogo.borderWidth??0} onChange={event=>updateLogo({borderWidth:Number(event.target.value)})}/><output>{selectedLogo.borderWidth??0}px</output></label><label>Màu viền<input aria-label="Màu viền logo" type="color" disabled={!(selectedLogo.borderWidth??0)} value={selectedLogo.borderColor??"#ffffff"} onChange={event=>updateLogo({borderColor:event.target.value})}/></label><small>{(selectedLogo.borderWidth??0)===0?"Không viền":"Viền được áp dụng cho preview và video xuất."}</small></div>}
-        {selection&&<button className="danger inspector-remove" disabled={(selection.kind==="video"&&tracks.videoLocked)||(selection.kind==="audio"&&tracks.audioLocked)||(selection.kind==="logo"&&tracks.overlayLocked)} onClick={removeSelection}>Xóa khỏi timeline</button>}
-      </aside>
-    </div>
-    <section className="timeline-panel professional-timeline"><header><div><button onClick={()=>void addVideos()}>＋ Thêm media</button><button disabled={!selection} onClick={removeSelection}>⌫ Xóa</button></div><div className="timeline-zoom"><button onClick={()=>setZoom(value=>Math.max(.5,value-.25))}>−</button><input aria-label="Timeline zoom" type="range" min=".5" max="4" step=".25" value={zoom} onChange={event=>setZoom(Number(event.target.value))}/><button onClick={()=>setZoom(value=>Math.min(4,value+.25))}>＋</button><button onClick={()=>setZoom(1)}>Fit</button><output>{Math.round(zoom*100)}%</output></div><span>xzdarcy interaction · AiCut timebase</span></header><div className="professional-timeline-body"><div className="professional-track-labels"><b><span>VIDEO</span><button onClick={()=>{checkpoint();setTracks(value=>({...value,videoLocked:!value.videoLocked}));}}>{tracks.videoLocked?"🔒":"🔓"}</button></b><b><span>AUDIO</span><span><button onClick={()=>{checkpoint();setTracks(value=>({...value,audioLocked:!value.audioLocked}));}}>{tracks.audioLocked?"🔒":"🔓"}</button><button onClick={()=>{checkpoint();setTracks(value=>({...value,audioMuted:!value.audioMuted}));}}>{tracks.audioMuted?"🔇":"🔊"}</button></span></b><b><span>OVERLAY</span><button onClick={()=>{checkpoint();setTracks(value=>({...value,overlayLocked:!value.overlayLocked}));}}>{tracks.overlayLocked?"🔒":"🔓"}</button></b></div><Timeline ref={professionalTimeline} editorData={timelineRows} effects={{video:{id:"video",name:"Video"},audio:{id:"audio",name:"Audio"},logo:{id:"logo",name:"Overlay"}}} scale={1} scaleSplitCount={snapping?30:10} scaleWidth={42*zoom} minScaleCount={Math.max(20,Math.ceil(duration)+2)} rowHeight={52} startLeft={0} gridSnap={snapping} dragLine autoScroll style={{height:183}} getActionRender={action=>{const [kind,id]=action.id.split(":");const item=kind==="video"?videos.find(value=>value.id===id):kind==="audio"?audio:logos.find(value=>value.id===id);return <div className={`pro-action pro-${kind}`}>{kind==="logo"?"◇ ":kind==="audio"?"♫ ":"▶ "}{item&&"path" in item?basename(item.path):kind}</div>;}} onClickActionOnly={(_event,{action})=>selectTimelineAction(action)} onClickRow={(_event,{time})=>seek(time)} onClickTimeArea={time=>{seek(time);return false;}} onCursorDrag={time=>seek(time)} onActionMoveStart={({action})=>beginTimelineInteraction(action)} onActionMoving={({action,start,end})=>moveTimelineAction(action,start,end)} onActionMoveEnd={({action,start})=>endTimelineMove(action,start)} onActionResizeStart={({action})=>beginTimelineInteraction(action)} onActionResizing={({action,start,end,dir})=>resizeTimelineAction(action,start,end,dir)} onActionResizeEnd={()=>{timelineInteraction.current=null;}} onChange={()=>false}/></div></section>
-    {error&&<p className="inline-error">{error}</p>}{message&&<p className="success-note">{message}</p>}
-  </section>;
+  function checkpoint() {
+    setHistory((current) => [...current.slice(-39), snapshot()]);
+    setFuture([]);
+  }
+  function undo() {
+    const previous = history.at(-1);
+    if (!previous) return;
+    setFuture((current) => [snapshot(), ...current].slice(0, 40));
+    setHistory((current) => current.slice(0, -1));
+    restore(previous);
+  }
+  function redo() {
+    const next = future[0];
+    if (!next) return;
+    setHistory((current) => [...current, snapshot()].slice(-40));
+    setFuture((current) => current.slice(1));
+    restore(next);
+  }
+  function saveProject() {
+    localStorage.setItem("supercut-project-v1", JSON.stringify(snapshot()));
+    setMessage("Đã lưu project trên thiết bị này.");
+  }
+  function loadProject() {
+    try {
+      const raw = localStorage.getItem("supercut-project-v1");
+      if (!raw) throw new Error("Chưa có project đã lưu");
+      checkpoint();
+      restore(JSON.parse(raw) as ProjectSnapshot);
+      setMessage("Đã khôi phục project.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  }
+  useEffect(() => {
+    const keyboard = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        event.shiftKey ? redo() : undo();
+      }
+      if (event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", keyboard);
+    return () => window.removeEventListener("keydown", keyboard);
+  });
+  async function metadata(path: string) {
+    const info = await inspectCompositionFile(path);
+    const mediaDuration = info.duration || 1;
+    return {
+      id: uid(),
+      path,
+      duration: mediaDuration,
+      width: info.width,
+      height: info.height,
+      trimStart: 0,
+      trimEnd: mediaDuration,
+      speed: 1,
+    };
+  }
+  async function addVideos() {
+    try {
+      const paths = await api.compositions.pickVideos();
+      const clips = await Promise.all(paths.map(metadata));
+      if (clips.length) checkpoint();
+      setVideos((current) => [...current, ...clips].slice(0, 20));
+      if (clips[0]) setSelection({ kind: "video", id: clips[0].id });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  }
+  async function chooseAudio() {
+    const path = await api.compositions.pick("audio");
+    if (!path) return;
+    try {
+      const clip = await metadata(path);
+      const waveform = await createWaveform(path).catch(() => null);
+      const ready = { ...clip, waveformPath: waveform?.path };
+      checkpoint();
+      setAudio(ready);
+      setSelection({ kind: "audio", id: ready.id });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  }
+  async function addLogo() {
+    if (logos.length >= 8) return;
+    const path = await pickCompositionLogo();
+    if (!path) return;
+    const logo = defaultLogo(path);
+    checkpoint();
+    setLogos((current) => [...current, logo]);
+    setSelection({ kind: "logo", id: logo.id });
+  }
+  function beginLogoEdit() {
+    if (logoEditActive.current) return;
+    checkpoint();
+    logoEditActive.current = true;
+  }
+  function endLogoEdit() {
+    logoEditActive.current = false;
+  }
+  function updateLogo(patch: Partial<Logo>) {
+    if (selection?.kind !== "logo" || tracks.overlayLocked) return;
+    if (!logoEditActive.current) checkpoint();
+    setLogos((current) =>
+      current.map((item) =>
+        item.id === selection.id ? { ...item, ...patch } : item,
+      ),
+    );
+  }
+  function updateVideo(patch: Partial<Clip>) {
+    if (selection?.kind !== "video" || tracks.videoLocked) return;
+    checkpoint();
+    setVideos((current) =>
+      current.map((item) =>
+        item.id === selection.id ? { ...item, ...patch } : item,
+      ),
+    );
+  }
+  function removeSelection() {
+    if (
+      !selection ||
+      (selection.kind === "video" && tracks.videoLocked) ||
+      (selection.kind === "audio" && tracks.audioLocked) ||
+      (selection.kind === "logo" && tracks.overlayLocked)
+    )
+      return;
+    checkpoint();
+    if (selection.kind === "video")
+      setVideos((current) =>
+        current.filter((item) => item.id !== selection.id),
+      );
+    if (selection.kind === "logo")
+      setLogos((current) => current.filter((item) => item.id !== selection.id));
+    if (selection.kind === "audio") setAudio(null);
+    setSelection(null);
+  }
+  function splitClip() {
+    if (
+      tracks.videoLocked ||
+      selection?.kind !== "video" ||
+      videos.length >= 20
+    )
+      return;
+    const index = videos.findIndex((item) => item.id === selection.id);
+    if (index < 0) return;
+    const clip = videos[index]!;
+    const start = videos
+      .slice(0, index)
+      .reduce((sum, item) => sum + clipDuration(item), 0);
+    const relative = playhead - start;
+    if (relative <= 0.05 || relative >= clipDuration(clip) - 0.05) {
+      setError("Đặt playhead vào bên trong clip để tách.");
+      return;
+    }
+    const sourceTime = clip.trimStart + relative * clip.speed;
+    const right = { ...clip, id: uid(), trimStart: sourceTime };
+    checkpoint();
+    setVideos((current) => [
+      ...current.slice(0, index),
+      { ...clip, trimEnd: sourceTime },
+      right,
+      ...current.slice(index + 1),
+    ]);
+    setSelection({ kind: "video", id: right.id });
+  }
+  function moveOverlay(
+    event: React.PointerEvent<HTMLImageElement>,
+    id: string,
+  ) {
+    if (tracks.overlayLocked || dragOverlay !== id) return;
+    const rect = event.currentTarget.parentElement?.getBoundingClientRect(),
+      image = event.currentTarget.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) return;
+    const { x, y } = boundedOverlayCenter(
+      event.clientX,
+      event.clientY,
+      rect,
+      image,
+    );
+    setLogos((current) =>
+      current.map((item) =>
+        item.id === id ? { ...item, xPercent: x, yPercent: y } : item,
+      ),
+    );
+  }
+  function logoAnimationDuration(logo: Logo) {
+    return previewAnimationDuration(
+      overlayBounds,
+      Math.min(52, logo.width / 8),
+      logo.mode,
+      logo.speedX,
+      logo.speedY,
+    );
+  }
+  function seek(value: number) {
+    let target = Math.max(0, Math.min(value, duration));
+    if (snapping) {
+      const boundaries = [0, duration];
+      let cursor = 0;
+      for (const clip of videos) {
+        cursor += clipDuration(clip);
+        boundaries.push(cursor);
+      }
+      const nearest = boundaries.reduce(
+        (best, item) =>
+          Math.abs(item - target) < Math.abs(best - target) ? item : best,
+        boundaries[0] ?? 0,
+      );
+      target =
+        Math.abs(nearest - target) <= 0.12
+          ? nearest
+          : Math.round(target * 30) / 30;
+    }
+    setPlayhead(target);
+  }
+  function stepFrame(direction: -1 | 1) {
+    seek(playhead + direction / 30);
+  }
+  async function togglePreviewFullscreen() {
+    const canvas = previewCanvas.current;
+    if (!canvas) return;
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await canvas.requestFullscreen();
+    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+  }
+  function selectTimelineAction(action: TimelineActionShape) {
+    const [kind, id] = action.id.split(":") as [
+      "video" | "audio" | "logo",
+      string,
+    ];
+    setSelection({ kind, id });
+  }
+  function beginTimelineInteraction(action: TimelineActionShape) {
+    const [kind, id] = action.id.split(":") as ["video" | "logo", string];
+    if (kind !== "video" && kind !== "logo") return;
+    checkpoint();
+    timelineInteraction.current = {
+      kind,
+      id,
+      actionStart: action.start,
+      actionEnd: action.end,
+      clip:
+        kind === "video" ? videos.find((item) => item.id === id) : undefined,
+    };
+    setSelection({ kind, id });
+  }
+  function resizeTimelineAction(
+    action: TimelineActionShape,
+    start: number,
+    end: number,
+    dir: "left" | "right",
+  ) {
+    const baseline = timelineInteraction.current;
+    if (!baseline || baseline.id !== action.id.split(":")[1]) return false;
+    if (baseline.kind === "logo") {
+      setLogos((current) =>
+        current.map((item) =>
+          item.id === baseline.id
+            ? {
+                ...item,
+                timelineStart: frameSnap(Math.max(0, start)),
+                timelineEnd: frameSnap(Math.max(start + 1 / 30, end)),
+              }
+            : item,
+        ),
+      );
+      return true;
+    }
+    const clip = baseline.clip;
+    if (!clip) return false;
+    setVideos((current) =>
+      current.map((item) =>
+        item.id === baseline.id
+          ? resizeSourceClip(
+              clip,
+              baseline.actionStart,
+              baseline.actionEnd,
+              start,
+              end,
+              dir,
+            )
+          : item,
+      ),
+    );
+    return true;
+  }
+  function moveTimelineAction(
+    action: TimelineActionShape,
+    start: number,
+    end: number,
+  ) {
+    const [kind, id] = action.id.split(":");
+    if (kind !== "logo") return true;
+    const length = Math.max(1 / 30, end - start),
+      nextStart = frameSnap(Math.max(0, start));
+    setLogos((current) =>
+      current.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              timelineStart: nextStart,
+              timelineEnd: Math.min(duration, nextStart + length),
+            }
+          : item,
+      ),
+    );
+    return true;
+  }
+  function endTimelineMove(action: TimelineActionShape, start: number) {
+    const [kind, id] = action.id.split(":");
+    if (kind === "video")
+      setVideos((current) =>
+        reorderByTimelineStart(
+          current,
+          id!,
+          start,
+          current.map(editedDuration),
+        ),
+      );
+    timelineInteraction.current = null;
+  }
+  async function create() {
+    if (!settings || !videos.length) return;
+    setError("");
+    setMessage("");
+    const video = videos[0]!.path;
+    const additionalVideos = videos.slice(1).map((item) => item.path);
+    try {
+      await api.compositions.create({
+        videoPath: video,
+        additionalVideoPaths: additionalVideos,
+        videoEdits: videos.map((item) => ({
+          path: item.path,
+          trimStart: item.trimStart,
+          trimEnd: item.trimEnd,
+          speed: item.speed,
+        })),
+        audioPath: audio?.path,
+        audioVolume: tracks.audioMuted ? 0 : audioVolume,
+        logos: logos.map(({ id, ...logo }) => ({
+          ...logo,
+          timelineEnd: logo.timelineEnd ?? duration,
+        })),
+        destinationDir: settings.downloadDir,
+        outputName: name.trim() || undefined,
+      });
+      setMessage(t("composition_queued"));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  }
+  return (
+    <section className="video-editor">
+      <header className="editor-topbar">
+        <div>
+          <strong>SuperCut Studio</strong>
+          <span>
+            {videos.length ? name || "Dự án chưa đặt tên" : "Dự án mới"}
+          </span>
+        </div>
+        <div className="editor-project-actions">
+          <button onClick={undo} disabled={!history.length} title="Ctrl+Z">
+            ↶
+          </button>
+          <button onClick={redo} disabled={!future.length} title="Ctrl+Y">
+            ↷
+          </button>
+          <button onClick={() => stepFrame(-1)} title="Lùi 1 frame">
+            ◀│
+          </button>
+          <button onClick={() => stepFrame(1)} title="Tiến 1 frame">
+            │▶
+          </button>
+          <button
+            className={snapping ? "active" : ""}
+            onClick={() => setSnapping((value) => !value)}
+            title="Bật/tắt snapping"
+          >
+            🧲
+          </button>
+          <button
+            onClick={splitClip}
+            disabled={selection?.kind !== "video" || videos.length >= 20}
+          >
+            ✂ Tách
+          </button>
+          <button onClick={saveProject}>Lưu</button>
+          <button onClick={loadProject}>Mở</button>
+          <div className="editor-project-name">
+            <input
+              aria-label="Tên video xuất"
+              value={name}
+              maxLength={120}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Tên video xuất"
+            />
+            <button
+              className="primary-download"
+              disabled={!videos.length}
+              onClick={() => void create()}
+            >
+              Xuất video
+            </button>
+          </div>
+        </div>
+      </header>
+      <div className="editor-workspace">
+        <aside className="media-bin">
+          <h3>Thư viện</h3>
+          <button onClick={() => void addVideos()}>＋ Video</button>
+          <button onClick={() => void chooseAudio()}>♫ Âm thanh</button>
+          <button onClick={() => void addLogo()}>◇ Logo</button>
+          <div className="media-assets">
+            {videos.map((item) => (
+              <button
+                className={selection?.id === item.id ? "selected" : ""}
+                key={item.id}
+                onClick={() => setSelection({ kind: "video", id: item.id })}
+              >
+                <i>▶</i>
+                <span>
+                  {basename(item.path)}
+                  <small>
+                    {clock(item.duration)} · {item.width}×{item.height}
+                  </small>
+                </span>
+              </button>
+            ))}
+            {audio && (
+              <button
+                className={selection?.id === audio.id ? "selected" : ""}
+                onClick={() => setSelection({ kind: "audio", id: audio.id })}
+              >
+                <i>♫</i>
+                <span>
+                  {basename(audio.path)}
+                  <small>{clock(audio.duration)}</small>
+                </span>
+              </button>
+            )}
+            {logos.map((item) => (
+              <button
+                className={selection?.id === item.id ? "selected" : ""}
+                key={item.id}
+                onClick={() => setSelection({ kind: "logo", id: item.id })}
+              >
+                <i>◇</i>
+                <span>
+                  {basename(item.path)}
+                  <small>Logo overlay</small>
+                </span>
+              </button>
+            ))}
+          </div>
+        </aside>
+        <main className="editor-stage">
+          <div className="preview-canvas" ref={previewCanvas}>
+            {currentVideo ? (
+              <>
+                <video
+                  ref={preview}
+                  key={currentVideo.clip.id}
+                  src={fileUrl(currentVideo.clip.path)}
+                  onLoadedMetadata={(event) => {
+                    event.currentTarget.currentTime = currentVideo.offset;
+                    requestAnimationFrame(() =>
+                      window.dispatchEvent(new Event("resize")),
+                    );
+                  }}
+                  onTimeUpdate={(event) => {
+                    if (!currentVideo) return;
+                    const source = Math.min(
+                      event.currentTarget.currentTime,
+                      currentVideo.clip.trimEnd,
+                    );
+                    setPlayhead(
+                      Math.min(
+                        duration,
+                        currentVideo.start +
+                          (source - currentVideo.clip.trimStart) /
+                            currentVideo.clip.speed,
+                      ),
+                    );
+                  }}
+                />
+                <div
+                  className="preview-overlays"
+                  style={{
+                    left: overlayBounds.left,
+                    top: overlayBounds.top,
+                    width: overlayBounds.width,
+                    height: overlayBounds.height,
+                  }}
+                >
+                  {logos
+                    .filter(
+                      (logo) =>
+                        playhead >= logo.timelineStart &&
+                        playhead <= (logo.timelineEnd ?? duration),
+                    )
+                    .map((logo) => {
+                      const logoWidth = Math.min(52, logo.width / 8);
+                      const style = {
+                        width: `${logoWidth}%`,
+                        opacity: logo.opacity,
+                        filter: `hue-rotate(${logo.hue}deg)`,
+                        padding: logo.padding / 5,
+                        border: `${((logo.borderWidth ?? 0) * overlayBounds.width) / Math.max(1, currentVideo.clip.width)}px solid ${logo.borderColor ?? "#ffffff"}`,
+                        boxSizing: "content-box",
+                        backgroundColor: `${logo.backgroundColor}${Math.round(
+                          logo.backgroundOpacity * 255,
+                        )
+                          .toString(16)
+                          .padStart(2, "0")}`,
+                        animationDuration: `${logoAnimationDuration(logo)}s`,
+                        "--logo-width": `${logoWidth}%`,
+                      } as React.CSSProperties;
+                      return (
+                        <img
+                          key={logo.id}
+                          src={fileUrl(logo.path)}
+                          className={
+                            selection?.id === logo.id ? "selected" : ""
+                          }
+                          style={
+                            logo.xPercent === undefined
+                              ? style
+                              : {
+                                  ...style,
+                                  left: `${logo.xPercent}%`,
+                                  top: `${logo.yPercent}%`,
+                                  transform: "translate(-50%,-50%)",
+                                }
+                          }
+                          data-position={
+                            logo.xPercent === undefined
+                              ? logo.position
+                              : "custom"
+                          }
+                          data-mode={logo.mode}
+                          onPointerDown={(event) => {
+                            event.preventDefault();
+                            setSelection({ kind: "logo", id: logo.id });
+                            if (tracks.overlayLocked) return;
+                            checkpoint();
+                            setDragOverlay(logo.id);
+                            event.currentTarget.setPointerCapture(
+                              event.pointerId,
+                            );
+                          }}
+                          onPointerMove={(event) => moveOverlay(event, logo.id)}
+                          onPointerUp={() => setDragOverlay(null)}
+                        />
+                      );
+                    })}
+                </div>
+              </>
+            ) : (
+              <div className="preview-empty">
+                <b>▶</b>
+                <span>Thêm video để bắt đầu dựng</span>
+              </div>
+            )}
+          </div>
+          <div className="transport">
+            <button onClick={() => seek(0)}>⏮</button>
+            <button
+              onClick={() =>
+                preview.current?.paused
+                  ? void preview.current.play()
+                  : preview.current?.pause()
+              }
+            >
+              ▶ / ❚❚
+            </button>
+            <button
+              aria-label="Phóng to preview"
+              title="Phóng to video và logo"
+              onClick={() => void togglePreviewFullscreen()}
+            >
+              ⛶
+            </button>
+            <strong>
+              {clock(playhead)} / {clock(duration)}
+            </strong>
+            <input
+              aria-label="Playhead"
+              type="range"
+              min="0"
+              max={Math.max(duration, 0.01)}
+              step=".01"
+              value={Math.min(playhead, duration)}
+              onChange={(event) => seek(Number(event.target.value))}
+            />
+          </div>
+        </main>
+        <aside className="editor-inspector">
+          <h3>Thuộc tính</h3>
+          {!selection && <p>Chọn một clip trên timeline để chỉnh sửa.</p>}
+          {selectedVideo && (
+            <div className="inspector-fields">
+              <strong>{basename(selectedVideo.path)}</strong>
+              <label>
+                Trim đầu (giây)
+                <input
+                  type="number"
+                  min="0"
+                  max={Math.max(0, selectedVideo.trimEnd - 0.01)}
+                  step=".05"
+                  value={selectedVideo.trimStart}
+                  onChange={(event) =>
+                    updateVideo({
+                      trimStart: Math.min(
+                        Number(event.target.value),
+                        selectedVideo.trimEnd - 0.01,
+                      ),
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Trim cuối (giây)
+                <input
+                  type="number"
+                  min={selectedVideo.trimStart + 0.01}
+                  max={selectedVideo.duration}
+                  step=".05"
+                  value={selectedVideo.trimEnd}
+                  onChange={(event) =>
+                    updateVideo({
+                      trimEnd: Math.max(
+                        Number(event.target.value),
+                        selectedVideo.trimStart + 0.01,
+                      ),
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Tốc độ
+                <select
+                  value={selectedVideo.speed}
+                  onChange={(event) =>
+                    updateVideo({ speed: Number(event.target.value) })
+                  }
+                >
+                  {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4].map((value) => (
+                    <option value={value} key={value}>
+                      {value}×
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Thời lượng sau dựng
+                <input
+                  value={`${clipDuration(selectedVideo).toFixed(2)} giây`}
+                  readOnly
+                />
+              </label>
+              <label>
+                Độ phân giải
+                <input
+                  value={`${selectedVideo.width} × ${selectedVideo.height}`}
+                  readOnly
+                />
+              </label>
+            </div>
+          )}
+          {selection?.kind === "audio" && audio && (
+            <div className="inspector-fields">
+              <strong>{basename(audio.path)}</strong>
+              <label>
+                Âm lượng
+                <input
+                  disabled={tracks.audioLocked || tracks.audioMuted}
+                  type="range"
+                  min="0"
+                  max="2"
+                  step=".05"
+                  value={audioVolume}
+                  onChange={(event) => {
+                    checkpoint();
+                    setAudioVolume(Number(event.target.value));
+                  }}
+                />
+                <output>
+                  {tracks.audioMuted
+                    ? "Tắt tiếng"
+                    : `${Math.round(audioVolume * 100)}%`}
+                </output>
+              </label>
+              <label>
+                Thời lượng
+                <input value={`${audio.duration.toFixed(2)} giây`} readOnly />
+              </label>
+            </div>
+          )}
+          {selectedLogo && (
+            <div className="inspector-fields">
+              <strong>{basename(selectedLogo.path)}</strong>
+              <label>
+                Bắt đầu (giây)
+                <input
+                  type="number"
+                  min="0"
+                  max={Math.max(0, duration - 0.01)}
+                  step=".05"
+                  value={selectedLogo.timelineStart}
+                  onChange={(event) =>
+                    updateLogo({ timelineStart: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Kết thúc (giây)
+                <input
+                  type="number"
+                  min={selectedLogo.timelineStart + 0.01}
+                  max={Math.max(duration, 0.01)}
+                  step=".05"
+                  value={selectedLogo.timelineEnd ?? duration}
+                  onChange={(event) =>
+                    updateLogo({ timelineEnd: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Chuyển động
+                <select
+                  value={selectedLogo.mode}
+                  onChange={(event) =>
+                    updateLogo({ mode: event.target.value as Logo["mode"] })
+                  }
+                >
+                  <option value="static">Cố định</option>
+                  <option value="bounce">Bật nẩy</option>
+                  <option value="horizontal">Trượt ngang</option>
+                  <option value="vertical">Trượt dọc</option>
+                </select>
+              </label>
+              <label>
+                Vị trí
+                <select
+                  value={selectedLogo.position}
+                  onChange={(event) =>
+                    updateLogo({
+                      position: event.target.value as Logo["position"],
+                    })
+                  }
+                >
+                  {positions.map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Kích thước
+                <input
+                  type="range"
+                  min="24"
+                  max="640"
+                  value={selectedLogo.width}
+                  onPointerDown={beginLogoEdit}
+                  onPointerUp={endLogoEdit}
+                  onPointerCancel={endLogoEdit}
+                  onChange={(event) =>
+                    updateLogo({ width: Number(event.target.value) })
+                  }
+                />
+                <output>{selectedLogo.width}px</output>
+              </label>
+              <label>
+                Độ mờ
+                <input
+                  type="range"
+                  min=".05"
+                  max="1"
+                  step=".05"
+                  value={selectedLogo.opacity}
+                  onPointerDown={beginLogoEdit}
+                  onPointerUp={endLogoEdit}
+                  onPointerCancel={endLogoEdit}
+                  onChange={(event) =>
+                    updateLogo({ opacity: Number(event.target.value) })
+                  }
+                />
+                <output>{Math.round(selectedLogo.opacity * 100)}%</output>
+              </label>
+              <label>
+                Màu sắc
+                <input
+                  aria-label="Màu sắc logo"
+                  type="range"
+                  min="-180"
+                  max="180"
+                  value={selectedLogo.hue}
+                  onPointerDown={beginLogoEdit}
+                  onPointerUp={endLogoEdit}
+                  onPointerCancel={endLogoEdit}
+                  onBlur={endLogoEdit}
+                  onChange={(event) =>
+                    updateLogo({ hue: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Nền
+                <input
+                  type="color"
+                  value={selectedLogo.backgroundColor}
+                  onChange={(event) =>
+                    updateLogo({ backgroundColor: event.target.value })
+                  }
+                />
+              </label>
+              {selectedLogo.mode !== "static" && (
+                <>
+                  <label>
+                    Tốc độ ngang
+                    <input
+                      type="number"
+                      min="1"
+                      max="600"
+                      value={selectedLogo.speedX}
+                      onChange={(event) =>
+                        updateLogo({ speedX: Number(event.target.value) })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Tốc độ dọc
+                    <input
+                      type="number"
+                      min="1"
+                      max="600"
+                      value={selectedLogo.speedY}
+                      onChange={(event) =>
+                        updateLogo({ speedY: Number(event.target.value) })
+                      }
+                    />
+                  </label>
+                </>
+              )}
+            </div>
+          )}
+          {selectedLogo && (
+            <div className="inspector-fields logo-border-controls">
+              <label>
+                Độ dày viền
+                <input
+                  aria-label="Độ dày viền logo"
+                  type="range"
+                  min="0"
+                  max="32"
+                  step="1"
+                  value={selectedLogo.borderWidth ?? 0}
+                  onChange={(event) =>
+                    updateLogo({ borderWidth: Number(event.target.value) })
+                  }
+                />
+                <output>{selectedLogo.borderWidth ?? 0}px</output>
+              </label>
+              <label>
+                Màu viền
+                <input
+                  aria-label="Màu viền logo"
+                  type="color"
+                  disabled={!(selectedLogo.borderWidth ?? 0)}
+                  value={selectedLogo.borderColor ?? "#ffffff"}
+                  onChange={(event) =>
+                    updateLogo({ borderColor: event.target.value })
+                  }
+                />
+              </label>
+              <small>
+                {(selectedLogo.borderWidth ?? 0) === 0
+                  ? "Không viền"
+                  : "Viền được áp dụng cho preview và video xuất."}
+              </small>
+            </div>
+          )}
+          {selection && (
+            <button
+              className="danger inspector-remove"
+              disabled={
+                (selection.kind === "video" && tracks.videoLocked) ||
+                (selection.kind === "audio" && tracks.audioLocked) ||
+                (selection.kind === "logo" && tracks.overlayLocked)
+              }
+              onClick={removeSelection}
+            >
+              Xóa khỏi timeline
+            </button>
+          )}
+        </aside>
+      </div>
+      <section className="timeline-panel professional-timeline">
+        <header>
+          <div>
+            <button onClick={() => void addVideos()}>＋ Thêm media</button>
+            <button disabled={!selection} onClick={removeSelection}>
+              ⌫ Xóa
+            </button>
+          </div>
+          <div className="timeline-zoom">
+            <button
+              onClick={() => setZoom((value) => Math.max(0.5, value - 0.25))}
+            >
+              −
+            </button>
+            <input
+              aria-label="Timeline zoom"
+              type="range"
+              min=".5"
+              max="4"
+              step=".25"
+              value={zoom}
+              onChange={(event) => setZoom(Number(event.target.value))}
+            />
+            <button
+              onClick={() => setZoom((value) => Math.min(4, value + 0.25))}
+            >
+              ＋
+            </button>
+            <button onClick={() => setZoom(1)}>Fit</button>
+            <output>{Math.round(zoom * 100)}%</output>
+          </div>
+          <span>xzdarcy interaction · AiCut timebase</span>
+        </header>
+        <div className="professional-timeline-body">
+          <div className="professional-track-labels">
+            <b>
+              <span>VIDEO</span>
+              <button
+                onClick={() => {
+                  checkpoint();
+                  setTracks((value) => ({
+                    ...value,
+                    videoLocked: !value.videoLocked,
+                  }));
+                }}
+              >
+                {tracks.videoLocked ? "🔒" : "🔓"}
+              </button>
+            </b>
+            <b>
+              <span>AUDIO</span>
+              <span>
+                <button
+                  onClick={() => {
+                    checkpoint();
+                    setTracks((value) => ({
+                      ...value,
+                      audioLocked: !value.audioLocked,
+                    }));
+                  }}
+                >
+                  {tracks.audioLocked ? "🔒" : "🔓"}
+                </button>
+                <button
+                  onClick={() => {
+                    checkpoint();
+                    setTracks((value) => ({
+                      ...value,
+                      audioMuted: !value.audioMuted,
+                    }));
+                  }}
+                >
+                  {tracks.audioMuted ? "🔇" : "🔊"}
+                </button>
+              </span>
+            </b>
+            <b>
+              <span>OVERLAY</span>
+              <button
+                onClick={() => {
+                  checkpoint();
+                  setTracks((value) => ({
+                    ...value,
+                    overlayLocked: !value.overlayLocked,
+                  }));
+                }}
+              >
+                {tracks.overlayLocked ? "🔒" : "🔓"}
+              </button>
+            </b>
+          </div>
+          <Timeline
+            ref={professionalTimeline}
+            editorData={timelineRows}
+            effects={{
+              video: { id: "video", name: "Video" },
+              audio: { id: "audio", name: "Audio" },
+              logo: { id: "logo", name: "Overlay" },
+            }}
+            scale={1}
+            scaleSplitCount={snapping ? 30 : 10}
+            scaleWidth={42 * zoom}
+            minScaleCount={Math.max(20, Math.ceil(duration) + 2)}
+            rowHeight={52}
+            startLeft={0}
+            gridSnap={snapping}
+            dragLine
+            autoScroll
+            style={{ height: 183 }}
+            getActionRender={(action) => {
+              const [kind, id] = action.id.split(":");
+              const item =
+                kind === "video"
+                  ? videos.find((value) => value.id === id)
+                  : kind === "audio"
+                    ? audio
+                    : logos.find((value) => value.id === id);
+              return (
+                <div className={`pro-action pro-${kind}`}>
+                  {kind === "logo" ? "◇ " : kind === "audio" ? "♫ " : "▶ "}
+                  {item && "path" in item ? basename(item.path) : kind}
+                </div>
+              );
+            }}
+            onClickActionOnly={(_event, { action }) =>
+              selectTimelineAction(action)
+            }
+            onClickRow={(_event, { time }) => seek(time)}
+            onClickTimeArea={(time) => {
+              seek(time);
+              return false;
+            }}
+            onCursorDrag={(time) => seek(time)}
+            onActionMoveStart={({ action }) => beginTimelineInteraction(action)}
+            onActionMoving={({ action, start, end }) =>
+              moveTimelineAction(action, start, end)
+            }
+            onActionMoveEnd={({ action, start }) =>
+              endTimelineMove(action, start)
+            }
+            onActionResizeStart={({ action }) =>
+              beginTimelineInteraction(action)
+            }
+            onActionResizing={({ action, start, end, dir }) =>
+              resizeTimelineAction(action, start, end, dir)
+            }
+            onActionResizeEnd={() => {
+              timelineInteraction.current = null;
+            }}
+            onChange={() => false}
+          />
+        </div>
+      </section>
+      {error && <p className="inline-error">{error}</p>}
+      {message && <p className="success-note">{message}</p>}
+    </section>
+  );
 }
