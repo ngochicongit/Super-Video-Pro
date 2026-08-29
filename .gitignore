@@ -5,6 +5,7 @@ release/
 coverage/
 outputs/
 vendor/tools/
+vendor/backend/
 vendor/*.zip
 .pnpm-store/
 *.log

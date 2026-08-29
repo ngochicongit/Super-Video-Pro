@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 
-const requireFromWorkspace = createRequire(join(process.cwd(), "package.json"));
+const requireFromWorkspace = createRequire(join(process.env.NEWSVID_NODE_ROOT || process.cwd(), "package.json"));
 const { chromium } = requireFromWorkspace("playwright");
 
 function args(argv) {

@@ -75,4 +75,12 @@ def load_config(path: Path | None = None) -> AppConfig:
         config.services.comfyui_url = os.environ["COMFYUI_URL"]
     if os.environ.get("COMFYUI_CHECKPOINT"):
         config.services.comfyui_checkpoint = os.environ["COMFYUI_CHECKPOINT"]
+    if os.environ.get("NEWSVID_FFMPEG"):
+        config.services.ffmpeg_executable = os.environ["NEWSVID_FFMPEG"]
+    if os.environ.get("NEWSVID_FFPROBE"):
+        config.services.ffprobe_executable = os.environ["NEWSVID_FFPROBE"]
+    if os.environ.get("NEWSVID_NODE"):
+        config.services.node_executable = os.environ["NEWSVID_NODE"]
+    if os.environ.get("NEWSVID_CHROMIUM"):
+        config.services.chromium_executable = Path(os.environ["NEWSVID_CHROMIUM"])
     return config

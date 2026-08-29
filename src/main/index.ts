@@ -54,7 +54,14 @@ app.whenReady().then(async()=>{
   process.env.SVP_TOOL_DIR=path.join(app.getPath("userData"),"tools");
   const repositoryRoot=path.join(here,"../.."),venvPython=path.join(repositoryRoot,".venv","Scripts","python.exe");
   if(!process.env.NEWSVID_PYTHON&&existsSync(venvPython))process.env.NEWSVID_PYTHON=venvPython;
-  backend=new BackendLifecycle({url:process.env.NEWSVID_API_URL??"http://127.0.0.1:8787",command:process.env.NEWSVID_PYTHON??"python",cwd:path.join(here,"../..")});
+  const packagedBackend=path.join(process.resourcesPath,"backend","newsvid-backend","newsvid-backend.exe");
+  const backendCommand=process.env.NEWSVID_PYTHON??(app.isPackaged&&existsSync(packagedBackend)?packagedBackend:"python");
+  process.env.NEWSVID_PROJECTS_DIR=process.env.NEWSVID_PROJECTS_DIR??path.join(app.getPath("userData"),"newsvid-projects");
+  process.env.NEWSVID_FFMPEG=process.env.NEWSVID_FFMPEG??path.join(process.env.SVP_TOOL_DIR,"ffmpeg.exe");
+  process.env.NEWSVID_FFPROBE=process.env.NEWSVID_FFPROBE??path.join(process.env.SVP_TOOL_DIR,"ffprobe.exe");
+  process.env.NEWSVID_NODE=process.env.NEWSVID_NODE??process.execPath;
+  process.env.NEWSVID_NODE_ROOT=process.env.NEWSVID_NODE_ROOT??app.getAppPath();
+  backend=new BackendLifecycle({url:process.env.NEWSVID_API_URL??"http://127.0.0.1:8787",command:backendCommand,args:backendCommand===packagedBackend?[]:undefined,cwd:app.isPackaged?process.resourcesPath:repositoryRoot});
   try{await backend.start();}catch(error){console.error("NewsVid backend startup failed",error);app.quit();return;}
   if(!process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM)process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM=await fs.readFile(path.join(app.getAppPath(),"assets","update-public.pem"),"utf8");
   db=new AppDatabase(app.getPath("userData"));const jobs=new JobManager(db);const diagnostics=new Diagnostics(path.join(app.getPath("userData"),"logs"),jobs.settings().logRetentionDays);diagnostics.write("info","app.start",{version:app.getVersion(),platform:process.platform});

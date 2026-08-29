@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke:real": "pnpm build && node scripts/real-site-smoke.mjs",
-    "package": "pnpm verify && node scripts/prepare-tools.mjs && pnpm build && electron-builder --win nsis --publish never",
+    "backend:build": "node scripts/build-backend.mjs",
+    "package": "pnpm verify && node scripts/prepare-tools.mjs && pnpm backend:build && pnpm build && electron-builder --win nsis --publish never",
     "desktop:smoke": "pnpm build && node -e \"const p=require('./package.json'); if(p.build.win.target!=='nsis') process.exit(1); console.log('desktop packaging contract OK')\"",
     "postpackage": "pnpm task:cleanup",
     "task:cleanup": "node scripts/cleanup-task-artifacts.mjs",
@@ -68,6 +69,11 @@
       "package.json"
     ],
     "extraResources": [
+      {
+        "from": "vendor/backend",
+        "to": "backend",
+        "filter": ["**/*"]
+      },
       {
         "from": "vendor/tools",
         "to": "tools",
