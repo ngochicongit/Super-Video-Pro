@@ -63,6 +63,7 @@ app.whenReady().then(async()=>{
   // The backend marks this Electron executable with ELECTRON_RUN_AS_NODE only for Node subprocesses.
   process.env.NEWSVID_NODE=process.env.NEWSVID_NODE??process.execPath;
   process.env.NEWSVID_NODE_ROOT=process.env.NEWSVID_NODE_ROOT??app.getAppPath();
+  if(app.isPackaged)process.env.PLAYWRIGHT_BROWSERS_PATH=process.env.PLAYWRIGHT_BROWSERS_PATH??path.join(process.resourcesPath,"playwright-browsers");
   backend=new BackendLifecycle({url:process.env.NEWSVID_API_URL??"http://127.0.0.1:8787",command:backendCommand,args:backendCommand===packagedBackend?[]:undefined,cwd:app.isPackaged?process.resourcesPath:repositoryRoot});
   try{await backend.start();}catch(error){console.error("NewsVid backend startup failed",error);app.quit();return;}
   if(!process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM)process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM=await fs.readFile(path.join(app.getAppPath(),"assets","update-public.pem"),"utf8");

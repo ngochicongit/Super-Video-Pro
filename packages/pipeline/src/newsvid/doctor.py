@@ -229,7 +229,7 @@ class PreflightEngine:
     if d.id=="piper_voice":ensure_piper_voice(self.config.services.piper_model_path,self.config.services.tts_voice);fixed=["downloaded trusted Piper voice atomically"]
     elif d.id=="whisperx":fixed=ensure_whisperx_service(self.root,self.config.services.whisperx_url,self.config.services.whisperx_model)
     else:
-     commands={"python_packages":[sys.executable,"-m","pip","install","-e","."],"piper":[sys.executable,"-m","pip","install","piper-tts>=1.7,<2"],"node_packages":[self._resolve("pnpm") or "pnpm","install","--frozen-lockfile"],"lockfile":[self._resolve("pnpm") or "pnpm","install","--lockfile-only"],"pnpm":[self._resolve("corepack") or "corepack","prepare","pnpm@11.19.0","--activate"],"chromium":[self._resolve("pnpm") or "pnpm","exec","playwright","install","chromium"]}
+     commands={"python_packages":[sys.executable,"-m","pip","install","-e","."],"piper":[sys.executable,"-m","pip","install","piper-tts>=1.7,<2"],"node_packages":[self._resolve("pnpm") or "pnpm","install","--frozen-lockfile"],"lockfile":[self._resolve("pnpm") or "pnpm","install","--lockfile-only"],"pnpm":[self._resolve("corepack") or "corepack","prepare","pnpm@11.19.0","--activate"],"chromium":[self._resolve("pnpm") or "pnpm","exec","playwright","install","chromium","ffmpeg"]}
      cmd=commands.get(d.id)
      if not cmd:return current
      r=self._run(cmd,600)

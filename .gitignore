@@ -6,6 +6,7 @@ coverage/
 outputs/
 vendor/tools/
 vendor/backend/
+vendor/playwright-browsers/
 vendor/*.zip
 .pnpm-store/
 *.log
