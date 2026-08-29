@@ -9,11 +9,15 @@ import json
 import threading, uuid
 from datetime import datetime, timezone
 from .persistence import atomic_write_text
+from .ingestion import IngestionCoordinator
+from .storyboards import StoryboardCoordinator
 
 def create_app(projects_dir: Path | None = None):
     from fastapi import FastAPI, HTTPException
     config = load_config(); manager = ProjectManager(projects_dir or config.projects_dir)
     app = FastAPI(title="NewsVid API", version="0.15.0")
+    @app.get("/health")
+    def health(): return {"status": "ok", "service": "newsvid"}
     jobs: dict[str, dict] = {}
     def run_job(project_id: str, operation: str, task):
         job_id = str(uuid.uuid4()); now = datetime.now(timezone.utc).isoformat(); jobs[job_id] = {"job_id": job_id, "project_id": project_id, "operation": operation, "status": "queued", "progress": 0, "current_stage": operation, "message": "Queued", "error": None, "created_at": now, "started_at": None, "completed_at": None}
@@ -52,9 +56,18 @@ def create_app(projects_dir: Path | None = None):
     @app.get("/projects/{project_id}/jobs")
     def project_jobs(project_id: str): return [j for j in jobs.values() if j["project_id"] == project_id]
     @app.post("/projects/{project_id}/{operation}")
-    def operation(project_id: str, operation: str):
+    def operation(project_id: str, operation: str, body: dict | None = None):
         if operation not in {"generate", "scene", "preview", "render", "validate"}: raise HTTPException(404, "Unknown operation")
         manager.load(project_id)
         if operation == "validate": return run_job(project_id, operation, lambda: QACoordinator(manager, FinalAssembler()).run(project_id))
+        if operation == "ingest":
+            source = str((body or {}).get("source", ""))
+            if not source: raise HTTPException(422, "source is required")
+            def ingest():
+                path = Path(source)
+                if path.is_file(): return IngestionCoordinator(manager).ingest_file(path, source_url=str((body or {}).get("source_url", "https://fixture.invalid/article")), project_id=project_id).model_dump(mode="json")
+                return IngestionCoordinator(manager).ingest_url(source, project_id=project_id).model_dump(mode="json")
+            return run_job(project_id, operation, ingest)
+        if operation == "storyboard": return run_job(project_id, operation, lambda: StoryboardCoordinator(manager).build(project_id).model_dump(mode="json"))
         raise HTTPException(501, f"Operation {operation} is not wired to a real coordinator yet")
     return app
