@@ -80,6 +80,13 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "vendor/playwright-browsers",
+        "to": "playwright-browsers",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "asar": true,
