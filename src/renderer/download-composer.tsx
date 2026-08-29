@@ -1,8 +1,183 @@
-import type {FormEvent} from "react";
-import type {MediaResource} from "../shared/contracts";
-import {api} from "./api";
-import {t} from "./i18n";
-import {useAppStore} from "./store";
-import {recentUrlsWithout} from "./ui-state";
-function variantLabel(variant:MediaResource["variants"][number]){const resolution=variant.height?`${variant.height}p`:variant.audioOnly?t("audio"):t("automatic");return[resolution,variant.bitrate?`${Math.round(variant.bitrate)} kbps`:null,(variant.container??variant.protocol).toUpperCase(),variant.label].filter(Boolean).join(" / ");}
-export function DownloadComposer(props:{url:string;setUrl:(value:string)=>void;resource:MediaResource|undefined;setResource:(value:MediaResource|undefined)=>void;selected:string;setSelected:(value:string)=>void;inspecting:boolean;inspectError:string;setInspectError:(value:string)=>void;batch:boolean;setBatch:(value:boolean)=>void;inspect:()=>Promise<void>;submit:(event:FormEvent)=>Promise<void>}){const {settings,saveSettings}=useAppStore();function selectMode(nextBatch:boolean){props.setBatch(nextBatch);props.setResource(undefined);void api.app.logAction("download.mode",{mode:nextBatch?"batch":"single"});}return <section className="composer"><header className="page-heading"><h2>{t("tab_download")}</h2><p>{t("download_tab_hint")}</p></header><div className="mode"><button className={!props.batch?"active":""} onClick={()=>selectMode(false)}>{t("single")}</button><button className={props.batch?"active":""} onClick={()=>selectMode(true)}>{t("batch")}</button></div>{Boolean(settings?.recentUrls.length)&&<div className="history-row"><label>{t("recent_links")}<select defaultValue="" onChange={event=>{if(event.target.value){props.setUrl(event.target.value);props.setResource(undefined);event.target.value="";}}}><option value="" disabled>{t("choose_recent_link")}</option>{settings?.recentUrls.map(item=><option key={item} value={item}>{item}</option>)}</select></label><button className="quiet danger" type="button" disabled={!settings?.recentUrls.includes(props.url)} onClick={()=>saveSettings({recentUrls:recentUrlsWithout(props.url,settings?.recentUrls??[])})}>{t("remove")}</button><button className="quiet danger" type="button" onClick={()=>saveSettings({recentUrls:[]})}>{t("clear_link_history")}</button></div>}<form onSubmit={props.submit}>{props.batch?<textarea value={props.url} onChange={event=>props.setUrl(event.target.value)} placeholder={t("batch_placeholder")} required/>:<input type="url" value={props.url} onChange={event=>{props.setUrl(event.target.value);props.setResource(undefined);props.setInspectError("");}} placeholder={t("single_placeholder")} required/>}<button className="primary-download" type={props.resource||props.batch?"submit":"button"} onClick={props.resource||props.batch?undefined:props.inspect} disabled={props.inspecting}>{props.inspecting?t("working"):props.batch?t("download_batch"):props.resource?t("download"):t("inspect")}</button></form>{props.inspectError&&<p className="inline-error">{props.inspectError}</p>}{props.resource&&!props.batch&&<div className="media-choice"><div><strong>{props.resource.title}</strong><span>{props.resource.extractor} / {props.resource.variants.length} {t("variants")}</span></div><label>{t("quality")}<select value={props.selected} onChange={event=>props.setSelected(event.target.value)}>{props.resource.variants.map(variant=><option key={variant.id} value={variant.id}>{variantLabel(variant)}</option>)}</select></label></div>}<p className="download-destination">{t("download_destination_summary")}: <strong>{settings?.downloadDir}</strong></p></section>}
+import type { FormEvent } from "react";
+import type { MediaResource } from "../shared/contracts";
+import { api } from "./api";
+import { t } from "./i18n";
+import { useAppStore } from "./store";
+import { recentUrlsWithout } from "./ui-state";
+function variantLabel(variant: MediaResource["variants"][number]) {
+  const resolution = variant.height
+    ? `${variant.height}p`
+    : variant.audioOnly
+      ? t("audio")
+      : t("automatic");
+  return [
+    resolution,
+    variant.bitrate ? `${Math.round(variant.bitrate)} kbps` : null,
+    (variant.container ?? variant.protocol).toUpperCase(),
+    variant.label,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+}
+export function DownloadComposer(props: {
+  url: string;
+  setUrl: (value: string) => void;
+  resource: MediaResource | undefined;
+  setResource: (value: MediaResource | undefined) => void;
+  selected: string;
+  setSelected: (value: string) => void;
+  inspecting: boolean;
+  inspectError: string;
+  setInspectError: (value: string) => void;
+  batch: boolean;
+  setBatch: (value: boolean) => void;
+  inspect: () => Promise<void>;
+  submit: (event: FormEvent) => Promise<void>;
+}) {
+  const { settings, saveSettings } = useAppStore();
+  function selectMode(nextBatch: boolean) {
+    props.setBatch(nextBatch);
+    props.setResource(undefined);
+    void api.app.logAction("download.mode", {
+      mode: nextBatch ? "batch" : "single",
+    });
+  }
+  return (
+    <section className="composer">
+      <header className="page-heading">
+        <h2>{t("tab_download")}</h2>
+        <p>{t("download_tab_hint")}</p>
+      </header>
+      <div className="mode">
+        <button
+          className={!props.batch ? "active" : ""}
+          onClick={() => selectMode(false)}
+        >
+          {t("single")}
+        </button>
+        <button
+          className={props.batch ? "active" : ""}
+          onClick={() => selectMode(true)}
+        >
+          {t("batch")}
+        </button>
+      </div>
+      {Boolean(settings?.recentUrls.length) && (
+        <div className="history-row">
+          <label>
+            {t("recent_links")}
+            <select
+              defaultValue=""
+              onChange={(event) => {
+                if (event.target.value) {
+                  props.setUrl(event.target.value);
+                  props.setResource(undefined);
+                  event.target.value = "";
+                }
+              }}
+            >
+              <option value="" disabled>
+                {t("choose_recent_link")}
+              </option>
+              {settings?.recentUrls.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="quiet danger"
+            type="button"
+            disabled={!settings?.recentUrls.includes(props.url)}
+            onClick={() =>
+              saveSettings({
+                recentUrls: recentUrlsWithout(
+                  props.url,
+                  settings?.recentUrls ?? [],
+                ),
+              })
+            }
+          >
+            {t("remove")}
+          </button>
+          <button
+            className="quiet danger"
+            type="button"
+            onClick={() => saveSettings({ recentUrls: [] })}
+          >
+            {t("clear_link_history")}
+          </button>
+        </div>
+      )}
+      <form onSubmit={props.submit}>
+        {props.batch ? (
+          <textarea
+            value={props.url}
+            onChange={(event) => props.setUrl(event.target.value)}
+            placeholder={t("batch_placeholder")}
+            required
+          />
+        ) : (
+          <input
+            aria-label="Nguồn media"
+            type="url"
+            value={props.url}
+            onChange={(event) => {
+              props.setUrl(event.target.value);
+              props.setResource(undefined);
+              props.setInspectError("");
+            }}
+            placeholder={t("single_placeholder")}
+            required
+          />
+        )}
+        <button
+          className="primary-download"
+          type={props.resource || props.batch ? "submit" : "button"}
+          onClick={props.resource || props.batch ? undefined : props.inspect}
+          disabled={props.inspecting}
+        >
+          {props.inspecting
+            ? t("working")
+            : props.batch
+              ? t("download_batch")
+              : props.resource
+                ? t("download")
+                : t("inspect")}
+        </button>
+      </form>
+      {props.inspectError && (
+        <p className="inline-error">{props.inspectError}</p>
+      )}
+      {props.resource && !props.batch && (
+        <div className="media-choice">
+          <div>
+            <strong>{props.resource.title}</strong>
+            <span>
+              {props.resource.extractor} / {props.resource.variants.length}{" "}
+              {t("variants")}
+            </span>
+          </div>
+          <label>
+            {t("quality")}
+            <select
+              value={props.selected}
+              onChange={(event) => props.setSelected(event.target.value)}
+            >
+              {props.resource.variants.map((variant) => (
+                <option key={variant.id} value={variant.id}>
+                  {variantLabel(variant)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+      <p className="download-destination">
+        {t("download_destination_summary")}:{" "}
+        <strong>{settings?.downloadDir}</strong>
+      </p>
+    </section>
+  );
+}

@@ -1,0 +1,7 @@
+---
+description: Deterministic UI refactor gate for Super Video Pro
+globs: src/renderer/**/*.{tsx,css}
+alwaysApply: false
+---
+
+Preserve `.ui-refactor/design/DESIGN.md`. Make one issue-cluster patch at a time. Run `pnpm ui:audit` before broad UI changes and `pnpm ui:verify && pnpm verify` afterward. Reject changes that lower the configured score, add renderer errors, create page-level horizontal overflow, break keyboard focus, or ignore reduced-motion preferences.

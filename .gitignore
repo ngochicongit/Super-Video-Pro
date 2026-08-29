@@ -5,6 +5,7 @@ release/
 coverage/
 outputs/
 vendor/tools/
+vendor/backend/
 vendor/*.zip
 .pnpm-store/
 *.log
@@ -14,3 +15,13 @@ vendor/*.zip
 .env.*
 !.env.example
 .codex_spreadsheet_work/
+.ui-refactor/runs/
+.ui-refactor/latest.json
+.upstream/
+.venv/
+.services/
+projects/
+models/piper/*.onnx
+models/piper/*.onnx.json
+__pycache__/
+.pytest_cache/

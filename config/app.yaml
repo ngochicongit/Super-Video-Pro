@@ -1,0 +1,33 @@
+projects_dir: projects
+pronunciation_path: config/pronunciation_vi.yaml
+log_level: INFO
+services:
+  ollama_url: http://127.0.0.1:11434
+  ollama_model: qwen2.5:7b
+  ollama_setup_model: qwen2.5:3b
+  ollama_temperature: 0.1
+  ollama_timeout_seconds: 120
+  ollama_max_attempts: 3
+  comfyui_url: http://127.0.0.1:8188
+  comfyui_checkpoint: sd_xl_base_1.0.safetensors
+  comfyui_timeout_seconds: 300
+  comfyui_poll_interval_seconds: 2
+  comfyui_workflow_dir: workflows/comfyui
+  tts_provider: piper
+  tts_voice: vi_VN-vais1000-medium
+  tts_speed: 1.0
+  tts_timeout_seconds: 120
+  piper_executable: piper
+  piper_model_path: models/piper/vi_VN-vais1000-medium.onnx
+  f5tts_url: http://127.0.0.1:7860
+  whisperx_url: http://127.0.0.1:8000
+  whisperx_model: small
+  whisperx_timeout_seconds: 300
+  subtitle_top_safe_px: 180
+  subtitle_bottom_safe_px: 300
+  subtitle_max_words_per_line: 7
+  ffmpeg_executable: ffmpeg
+  ffprobe_executable: ffprobe
+  image_max_bytes: 20971520
+  node_executable: node
+  chromium_executable: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
