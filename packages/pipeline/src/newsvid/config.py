@@ -73,6 +73,10 @@ def load_config(path: Path | None = None) -> AppConfig:
             config.services.comfyui_workflow_dir = Path(str(packaged_workflows))
     if os.environ.get("COMFYUI_URL"):
         config.services.comfyui_url = os.environ["COMFYUI_URL"]
+    if os.environ.get("OLLAMA_URL"):
+        config.services.ollama_url = os.environ["OLLAMA_URL"]
+    if os.environ.get("OLLAMA_MODEL"):
+        config.services.ollama_model = os.environ["OLLAMA_MODEL"]
     if os.environ.get("COMFYUI_CHECKPOINT"):
         config.services.comfyui_checkpoint = os.environ["COMFYUI_CHECKPOINT"]
     if os.environ.get("NEWSVID_FFMPEG"):

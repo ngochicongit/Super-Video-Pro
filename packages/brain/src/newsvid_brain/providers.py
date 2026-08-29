@@ -77,4 +77,20 @@ class OllamaProvider:
                     break
             if attempt < self.config.max_attempts:
                 self._sleeper(self.config.base_delay_seconds * (2 ** (attempt - 1)))
-        raise LLMError(f"Ollama request failed after {self.config.max_attempts} attempt(s)") from last_error
+        detail = "unknown error"
+        if isinstance(last_error, httpx.HTTPStatusError):
+            response = last_error.response
+            try:
+                payload = response.json()
+                detail = str(payload.get("error") or response.text or response.reason_phrase)
+            except (ValueError, TypeError):
+                detail = response.text.strip() or response.reason_phrase
+            detail = f"HTTP {response.status_code}: {detail}"
+        elif isinstance(last_error, self._retry_errors):
+            detail = (
+                f"cannot connect to {self.config.base_url}. Start Ollama and install model "
+                f"'{self.config.model}' (ollama pull {self.config.model})"
+            )
+        raise LLMError(
+            f"Ollama request failed after {self.config.max_attempts} attempt(s): {detail}"
+        ) from last_error

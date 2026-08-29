@@ -23,6 +23,12 @@ type Job = {
   message: string;
   error?: string | null;
 };
+type ServiceStatus = {
+  name: string;
+  status: string;
+  detail: string;
+  required: boolean;
+};
 export type Scene = {
   id: string;
   type: string;
@@ -188,6 +194,17 @@ export function WebStudio() {
     if (!project) return;
     setError("");
     try {
+      if (["facts", "script"].includes(operation)) {
+        const services = await request<ServiceStatus[]>("/services/status");
+        setData((current) => ({ ...current, services }));
+        const ollama = services.find((service) => service.name === "Ollama");
+        if (!ollama || ollama.status !== "OK") {
+          throw new Error(
+            ollama?.detail ??
+              "Không thể kiểm tra Ollama. Hãy mở tab Services và thử lại.",
+          );
+        }
+      }
       setJob(
         await request<Job>(`/projects/${project.id}/${operation}`, {
           method: "POST",
@@ -497,7 +514,19 @@ export function WebStudio() {
             >
               Refresh services
             </button>
-            <pre>{JSON.stringify(data.services ?? "Chưa kiểm tra dịch vụ", null, 2)}</pre>
+            {Array.isArray(data.services) ? (
+              <div className="studio-resource-grid">
+                {(data.services as ServiceStatus[]).map((service) => (
+                  <section key={service.name}>
+                    <h3>{service.name}</h3>
+                    <b>{service.status}</b>
+                    <p>{service.detail}</p>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <p>Chưa kiểm tra dịch vụ</p>
+            )}
           </>
         )}
       </div>

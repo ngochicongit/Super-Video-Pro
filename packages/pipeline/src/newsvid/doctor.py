@@ -5,6 +5,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import httpx
 from pathlib import Path
 from dataclasses import dataclass
 from urllib.parse import urlparse
@@ -55,6 +56,32 @@ def _playwright() -> DependencyStatus:
         return DependencyStatus("Playwright", "OPTIONAL/OFFLINE", str(exc))
 
 
+def _ollama(config: AppConfig) -> DependencyStatus:
+    url = config.services.ollama_url.rstrip("/")
+    model = config.services.ollama_model
+    try:
+        response = httpx.get(f"{url}/api/tags", timeout=1.5)
+        response.raise_for_status()
+        installed = {
+            str(item.get("name", ""))
+            for item in response.json().get("models", [])
+            if isinstance(item, dict)
+        }
+        aliases = {name.split(":", 1)[0] for name in installed}
+        available = model in installed or (":" not in model and model in aliases)
+        if available:
+            return DependencyStatus("Ollama", "OK", f"{model} ready at {url}", True)
+        return DependencyStatus(
+            "Ollama", "MODEL_MISSING",
+            f"Service is online, but model '{model}' is missing. Run: ollama pull {model}", True,
+        )
+    except (httpx.HTTPError, ValueError, TypeError) as exc:
+        return DependencyStatus(
+            "Ollama", "OFFLINE",
+            f"Cannot reach {url}. Install/start Ollama, then run: ollama pull {model} ({exc})", True,
+        )
+
+
 def collect_status(config: AppConfig) -> list[DependencyStatus]:
     repository_root = Path(__file__).resolve().parents[4]
     node_playwright = repository_root / "node_modules" / "playwright" / "package.json"
@@ -68,8 +95,7 @@ def collect_status(config: AppConfig) -> list[DependencyStatus]:
                          str(config.services.chromium_executable), True),
         DependencyStatus("Motion", "OK" if node_playwright.is_file() and gsap.is_file() else "MISSING",
                          "Playwright 1.58.2 + GSAP 3.14.2", True),
-        _command("ollama", ["--version"]),
-        DependencyStatus("Qwen", "CONFIGURED", config.services.ollama_model),
+        _ollama(config),
         _playwright(),
         _port("ComfyUI", config.services.comfyui_url),
         _command("piper", ["--version"]),

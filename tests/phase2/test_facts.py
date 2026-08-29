@@ -12,7 +12,7 @@ from newsvid.facts import FactsCoordinator
 from newsvid.ingestion import IngestionCoordinator
 from newsvid.project import ProjectManager
 from newsvid.schemas import PipelineStage, StageStatus
-from newsvid_brain import GroundingError, OllamaConfig, OllamaProvider, StructuredOutputError
+from newsvid_brain import GroundingError, LLMError, OllamaConfig, OllamaProvider, StructuredOutputError
 
 ROOT = Path(__file__).parents[2]
 FIXTURE = ROOT / "tests" / "fixtures" / "article_vi.html"
@@ -124,3 +124,18 @@ def test_ollama_retries_only_transient_statuses_and_sends_schema() -> None:
     assert len(calls) == 2
     assert calls[0]["format"] == {"type": "object"}
     assert calls[0]["stream"] is False
+
+
+def test_ollama_connection_error_is_actionable() -> None:
+    def unavailable(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("refused", request=request)
+
+    provider = OllamaProvider(
+        OllamaConfig(base_url="http://127.0.0.1:11434", model="qwen2.5:7b", max_attempts=1),
+        transport=httpx.MockTransport(unavailable), sleeper=lambda _: None,
+    )
+    with pytest.raises(LLMError) as captured:
+        provider.generate_structured("prompt", {"type": "object"})
+    message = str(captured.value)
+    assert "cannot connect to http://127.0.0.1:11434" in message
+    assert "ollama pull qwen2.5:7b" in message
