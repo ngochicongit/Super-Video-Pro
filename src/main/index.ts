@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Notification } from "electron";
 import fs from "node:fs/promises";
+import {existsSync} from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { AppUpdater } from "./app-updater.js";
@@ -15,7 +16,17 @@ import {BackendLifecycle} from "./backend-lifecycle.js";
 const here=path.dirname(fileURLToPath(import.meta.url));
 let db:AppDatabase|undefined;
 let backend:BackendLifecycle|undefined;
+let signalShutdown=false;
 if(process.env.SVP_UI_AUDIT_PROFILE)app.setPath("userData",process.env.SVP_UI_AUDIT_PROFILE);
+
+async function shutdownFromSignal(){
+  if(signalShutdown)return;
+  signalShutdown=true;
+  await backend?.stop();
+  app.quit();
+}
+process.once("SIGINT",()=>{void shutdownFromSignal();});
+process.once("SIGTERM",()=>{void shutdownFromSignal();});
 
 async function createWindow(){
   const win=new BrowserWindow({width:Number(process.env.SVP_SCREENSHOT_WIDTH??1180),height:Number(process.env.SVP_SCREENSHOT_HEIGHT??760),minWidth:900,minHeight:600,frame:false,autoHideMenuBar:true,icon:path.join(here,"../../assets/icon.png"),show:!process.env.SVP_SCREENSHOT_PATH,backgroundColor:"#08111f",webPreferences:{preload:path.join(here,"../preload/index.cjs"),contextIsolation:true,nodeIntegration:false,sandbox:true}});
@@ -41,6 +52,8 @@ async function createWindow(){
 app.whenReady().then(async()=>{
   if(process.env.SVP_BROWSER_SMOKE_OUTPUT){try{await runBrowserSmoke(process.env.SVP_BROWSER_SMOKE_OUTPUT);app.quit();}catch(error){await fs.writeFile(process.env.SVP_BROWSER_SMOKE_OUTPUT,JSON.stringify({error:error instanceof Error?error.stack:String(error)},null,2));app.exit(1);}return;}
   process.env.SVP_TOOL_DIR=path.join(app.getPath("userData"),"tools");
+  const repositoryRoot=path.join(here,"../.."),venvPython=path.join(repositoryRoot,".venv","Scripts","python.exe");
+  if(!process.env.NEWSVID_PYTHON&&existsSync(venvPython))process.env.NEWSVID_PYTHON=venvPython;
   backend=new BackendLifecycle({url:process.env.NEWSVID_API_URL??"http://127.0.0.1:8787",command:process.env.NEWSVID_PYTHON??"python",cwd:path.join(here,"../..")});
   try{await backend.start();}catch(error){console.error("NewsVid backend startup failed",error);app.quit();return;}
   if(!process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM)process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM=await fs.readFile(path.join(app.getAppPath(),"assets","update-public.pem"),"utf8");
