@@ -29,7 +29,8 @@ class AlignmentCoordinator:
         if set(entries) != {scene.id for scene in storyboard.scenes}:
             raise AlignmentError("TTS manifest does not cover every storyboard scene")
         digest = hashlib.sha256()
-        for value in (storyboard.model_dump_json(), manifest.model_dump_json(),
+        scene_sequence = "|".join(scene.id for scene in storyboard.scenes)
+        for value in (scene_sequence, manifest.model_dump_json(),
                       self.provider.name, self.provider.cache_key,
                       self.layout.model_dump_json()):
             digest.update(value.encode("utf-8"))

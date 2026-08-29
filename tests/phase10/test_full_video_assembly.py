@@ -246,3 +246,46 @@ def test_real_full_1080x1920_video_with_image_motion_ai_voice_captions_and_trans
     assert checkpoint.stages[PipelineStage.SCENES].status is StageStatus.COMPLETED
     assert checkpoint.stages[PipelineStage.PREVIEW].status is StageStatus.COMPLETED
     assert checkpoint.stages[PipelineStage.FINAL_RENDER].status is StageStatus.COMPLETED
+
+
+@pytest.mark.acceptance
+def test_scene_render_preserves_unrelated_outputs_and_no_change_is_a_real_cache_hit(
+        tmp_path: Path) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    ffprobe = shutil.which("ffprobe")
+    if not ffmpeg or not ffprobe or not EDGE.is_file():
+        pytest.skip("FFmpeg/FFprobe/Edge unavailable")
+    manager, project_id = seed_full_project(tmp_path, ffmpeg)
+    coordinator = VideoRenderCoordinator(
+        manager, ArticleImageCache(),
+        SceneRenderer(
+            FFmpegArticleRenderer(ffmpeg=ffmpeg, ffprobe=ffprobe),
+            HyperFramesChromiumRenderer(repository_root=Path.cwd(), ffmpeg=ffmpeg,
+                                         chromium=EDGE),
+        ),
+        FinalAssembler(ffmpeg=ffmpeg, ffprobe=ffprobe),
+    )
+    coordinator.preview(project_id, transition=TransitionConfig())
+    directory = manager.project_dir(project_id)
+    paths = {scene_id: directory / "scenes" / f"{scene_id}.mp4"
+             for scene_id in ("scene_001", "scene_002", "scene_003")}
+    before = {scene_id: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
+              for scene_id, path in paths.items()}
+
+    storyboard_path = directory / "storyboard.json"
+    storyboard = Storyboard.model_validate_json(storyboard_path.read_text(encoding="utf-8"))
+    changed = storyboard.model_copy(deep=True)
+    changed.scenes[1].visual.template = "frame-pentagram-stat-selective"
+    atomic_write_model(storyboard_path, changed)
+    rendered = coordinator.render_scene(project_id, "scene_002")
+    after = {scene_id: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
+             for scene_id, path in paths.items()}
+    assert rendered.scene_id == "scene_002"
+    assert after["scene_002"] != before["scene_002"]
+    assert after["scene_001"] == before["scene_001"]
+    assert after["scene_003"] == before["scene_003"]
+
+    coordinator.render_scene(project_id, "scene_002")
+    cached = {scene_id: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
+              for scene_id, path in paths.items()}
+    assert cached == after

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import hashlib
 import json
 import subprocess
 import wave
@@ -181,11 +182,24 @@ def test_only_changed_narration_regenerates_and_provider_config_invalidates_all(
     provider = FakeTTSProvider()
     TTSCoordinator(manager, provider, config, voice="voice-vi").generate(project_id)
     directory = manager.project_dir(project_id)
+    outputs = {scene_id: directory / "audio" / f"{scene_id}.wav"
+               for scene_id in ("scene_001", "scene_002", "scene_003")}
+    before = {scene_id: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
+              for scene_id, path in outputs.items()}
     board = load_model(directory / "storyboard.json", Storyboard)
     board.scenes[1].narration = "Kế hoạch tăng 20% trong năm 2026."
     atomic_write_model(directory / "storyboard.json", board)
     TTSCoordinator(manager, provider, config, voice="voice-vi").generate(project_id)
     assert len(provider.calls) == 4
+    after = {scene_id: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
+             for scene_id, path in outputs.items()}
+    assert after["scene_001"] == before["scene_001"]
+    assert after["scene_003"] == before["scene_003"]
+    assert after["scene_002"] != before["scene_002"]
+    TTSCoordinator(manager, provider, config, voice="voice-vi").generate(project_id)
+    cached = {scene_id: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
+              for scene_id, path in outputs.items()}
+    assert cached == after and len(provider.calls) == 4
     changed_provider = FakeTTSProvider("fake-config-v2")
     TTSCoordinator(manager, changed_provider, config, voice="voice-vi").generate(project_id)
     assert len(changed_provider.calls) == 3

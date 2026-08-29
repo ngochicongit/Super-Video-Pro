@@ -13,7 +13,7 @@ import pytest
 
 from newsvid.alignment import AlignmentCoordinator
 from newsvid.checkpoint import CheckpointStore
-from newsvid.persistence import atomic_write_model
+from newsvid.persistence import atomic_write_model, load_model
 from newsvid.project import ProjectManager
 from newsvid.schemas import PipelineStage, StageStatus
 from newsvid_brain import (AlignmentError, SceneAlignment, SubtitleLayout,
@@ -187,3 +187,9 @@ def test_audio_to_words_and_ass_with_checkpoint_cache(tmp_path: Path) -> None:
     checkpoint = CheckpointStore(directory / "checkpoint.json").load()
     assert checkpoint.stages[PipelineStage.ALIGNMENT].status is StageStatus.COMPLETED
     assert checkpoint.stages[PipelineStage.VISUALS].status is StageStatus.PENDING
+    board = load_model(directory / "storyboard.json", Storyboard)
+    board.scenes[0].visual.template = "visual-only-edit"
+    atomic_write_model(directory / "storyboard.json", board)
+    visual_edit_words, _ = coordinator.generate(project_id)
+    assert provider.calls == 1
+    assert visual_edit_words.fingerprint == words.fingerprint
