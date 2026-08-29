@@ -11,11 +11,16 @@ from datetime import datetime, timezone
 from .persistence import atomic_write_text
 from .ingestion import IngestionCoordinator
 from .storyboards import StoryboardCoordinator
-from newsvid_brain import OllamaConfig, OllamaProvider, NewsStyle
+from newsvid_brain import OllamaConfig, OllamaProvider, NewsStyle, TransitionConfig
 from .facts import FactsCoordinator
 from .scripts import ScriptCoordinator
 from .tts import TTSCoordinator
 from newsvid_brain import PiperConfig, PiperProvider, load_pronunciation
+from .article_renderer import ArticleImageCache, FFmpegArticleRenderer
+from .motion_renderer import HyperFramesChromiumRenderer, SceneRenderer
+from .video_renderer import VideoRenderCoordinator
+from .comfyui import HTTPComfyUIProvider
+from .visuals import VisualCoordinator
 
 def create_app(projects_dir: Path | None = None):
     from fastapi import FastAPI, HTTPException
@@ -83,5 +88,13 @@ def create_app(projects_dir: Path | None = None):
             voice = config.services.tts_voice
             tts = PiperProvider(PiperConfig(executable=config.services.piper_executable, model_path=config.services.piper_model_path, voice_name=voice, speed=config.services.tts_speed, timeout_seconds=config.services.tts_timeout_seconds))
             return run_job(project_id, operation, lambda: TTSCoordinator(manager, tts, load_pronunciation(config.pronunciation_path), voice=voice).generate(project_id).model_dump(mode="json"))
+        if operation == "visual":
+            visual = HTTPComfyUIProvider(base_url=config.services.comfyui_url, checkpoint=config.services.comfyui_checkpoint, workflow_dir=config.services.comfyui_workflow_dir, timeout_seconds=config.services.comfyui_timeout_seconds, poll_interval_seconds=config.services.comfyui_poll_interval_seconds)
+            return run_job(project_id, operation, lambda: VisualCoordinator(manager, visual).generate(project_id).model_dump(mode="json"))
+        if operation in {"preview", "render"}:
+            root = Path(__file__).resolve().parents[4]
+            renderer = VideoRenderCoordinator(manager, ArticleImageCache(max_bytes=config.services.image_max_bytes), SceneRenderer(FFmpegArticleRenderer(ffmpeg=config.services.ffmpeg_executable, ffprobe=config.services.ffprobe_executable), HyperFramesChromiumRenderer(repository_root=root, node=config.services.node_executable, ffmpeg=config.services.ffmpeg_executable, chromium=config.services.chromium_executable)), FinalAssembler(ffmpeg=config.services.ffmpeg_executable, ffprobe=config.services.ffprobe_executable))
+            transition = TransitionConfig()
+            return run_job(project_id, operation, lambda: (renderer.preview(project_id, transition=transition) if operation == "preview" else renderer.render(project_id, transition=transition)).model_dump(mode="json"))
         raise HTTPException(501, f"Operation {operation} is not wired to a real coordinator yet")
     return app
