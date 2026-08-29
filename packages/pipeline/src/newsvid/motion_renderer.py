@@ -13,6 +13,7 @@ from newsvid_brain.motion_templates import TEMPLATE_VERSION, render_motion_html
 from newsvid_brain.storyboard_models import SceneType
 
 from .persistence import atomic_write_text
+from .process_env import subprocess_environment
 
 
 MOTION_TYPES = {
@@ -26,6 +27,11 @@ MOTION_TYPES = {
     SceneType.QUOTE: MotionTemplate.QUOTE,
     SceneType.OUTRO: MotionTemplate.OUTRO,
 }
+
+
+def motion_render_timeout_seconds(duration_seconds: float) -> float:
+    """Allow enough wall time for Chromium to capture and encode vertical video."""
+    return min(600.0, max(120.0, duration_seconds * 12.0))
 
 
 def motion_input_for_scene(scene: StoryboardScene, *, width: int, height: int,
@@ -121,8 +127,12 @@ class HyperFramesChromiumRenderer:
                    "--duration", str(spec.duration_seconds), "--ffmpeg", self.ffmpeg,
                    "--chromium", str(self.chromium)]
         try:
-            result = self.runner(command, check=True, capture_output=True, text=True,
-                                 shell=False, cwd=self.root, timeout=max(60, spec.duration_seconds * 5))
+            result = self.runner(
+                command, check=True, capture_output=True, text=True,
+                shell=False, cwd=self.root,
+                timeout=motion_render_timeout_seconds(spec.duration_seconds),
+                env=subprocess_environment(self.node),
+            )
             metadata = json.loads(result.stdout)
         except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired, json.JSONDecodeError) as exc:
             stderr = getattr(exc, "stderr", "") or str(exc)

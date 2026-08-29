@@ -107,9 +107,13 @@ class OllamaSetupCoordinator:
             raise RuntimeError(f"Lệnh thất bại ({code}): {' '.join(command[:3])}; {latest.strip()}")
 
 
-def save_service_settings(path: Path, *, ollama_model: str) -> None:
+def save_service_settings(path: Path, **settings: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".tmp")
-    temporary.write_text(json.dumps({"ollama_model": ollama_model}, ensure_ascii=False, indent=2), encoding="utf-8")
+    existing = {}
+    if path.is_file():
+        try: existing = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError): pass
+    existing.update(settings)
+    temporary.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
     temporary.replace(path)
-

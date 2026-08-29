@@ -39,18 +39,21 @@ class VideoRenderCoordinator:
     def dependency_plan(kind: ChangeKind | str, scene_ids: list[str] | tuple[str, ...] = ()) -> InvalidationPlan:
         return plan_invalidation(kind, scene_ids)
 
-    def preview(self, project_id: str, *, transition: TransitionConfig) -> PreviewResult:
+    def preview(self, project_id: str, *, transition: TransitionConfig,
+                captions: bool = True) -> PreviewResult:
         directory, storyboard, rendered, _, preview_fingerprint = self._render_scenes(
             project_id, transition=transition
         )
-        subtitles = directory / "captions" / "subtitles.ass"
-        if not subtitles.is_file():
+        subtitles = directory / "captions" / "subtitles.ass" if captions else None
+        if captions and (subtitles is None or not subtitles.is_file()):
             raise RenderError("Phase 6 ASS subtitles are required")
         preview_digest = hashlib.sha256()
         preview_digest.update(preview_fingerprint.encode("ascii"))
-        preview_digest.update(_sha256_file(subtitles).encode("ascii"))
+        preview_digest.update(("captioned" if captions else "quick-caption-free").encode("ascii"))
+        if subtitles is not None:
+            preview_digest.update(_sha256_file(subtitles).encode("ascii"))
         preview_fingerprint = f"sha256:{preview_digest.hexdigest()}"
-        preview_path = directory / "output" / "preview.mp4"
+        preview_path = directory / "output" / ("preview.mp4" if captions else "quick-preview.mp4")
         store = CheckpointStore(directory / "checkpoint.json")
         checkpoint = store.load().stages[PipelineStage.PREVIEW]
         if not (checkpoint.status is StageStatus.COMPLETED
@@ -67,7 +70,7 @@ class VideoRenderCoordinator:
                 self._validate_target(probe, "Preview")
                 store.update(PipelineStage.PREVIEW, StageStatus.COMPLETED,
                              fingerprint=preview_fingerprint,
-                             metadata={"output": "output/preview.mp4",
+                             metadata={"output": f"output/{preview_path.name}",
                                        "duration_seconds": probe.duration_seconds,
                                        "transition": transition.model_dump(mode="json")})
             except Exception as exc:
@@ -79,7 +82,8 @@ class VideoRenderCoordinator:
         probe = self.assembler.probe(preview_path)
         self._validate_target(probe, "Preview")
         return PreviewResult(fingerprint=preview_fingerprint, transition=transition,
-                             scenes=rendered, probe=probe)
+                             scenes=rendered, probe=probe,
+                             output_path=f"output/{preview_path.name}")
 
     def render(self, project_id: str, *, transition: TransitionConfig) -> RenderManifest:
         preview = self.preview(project_id, transition=transition)

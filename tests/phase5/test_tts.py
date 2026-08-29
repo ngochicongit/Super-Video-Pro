@@ -16,6 +16,7 @@ from newsvid.persistence import atomic_write_model, load_model
 from newsvid.project import ProjectManager
 from newsvid.schemas import PipelineStage, StageStatus
 from newsvid.tts import TTSCoordinator
+from newsvid.piper_setup import ensure_piper_voice
 from newsvid_brain import (F5TTSConfig, F5TTSProvider, NewsStyle, PiperConfig,
                            PiperProvider, SceneType, SourceType, Storyboard,
                            StoryboardScene, TTSError, VisualPlan, VisualProvenance,
@@ -79,12 +80,26 @@ def test_piper_provider_invokes_local_cli_and_validates_wav(tmp_path: Path) -> N
     assert output.is_file()
     assert seen["shell"] is False
     assert seen["input"] == "Xin chào".encode("utf-8")
+    assert seen["env"]["PYTHONIOENCODING"] == "utf-8"
 
 
 def test_piper_missing_model_is_actionable(tmp_path: Path) -> None:
     provider = PiperProvider(PiperConfig(model_path=tmp_path / "missing.onnx"))
     with pytest.raises(TTSError, match="model not found"):
         provider.synthesize("Xin chào", tmp_path / "out.wav", voice="vi_VN-vais1000-medium")
+
+
+def test_missing_piper_voice_is_staged_atomically(tmp_path: Path) -> None:
+    model = tmp_path / "voice.onnx"
+
+    def downloader(_voice: str, directory: Path) -> None:
+        (directory / "voice.onnx").write_bytes(b"m" * 1_000_001)
+        (directory / "voice.onnx.json").write_text("{}", encoding="utf-8")
+
+    ensure_piper_voice(model, "vi_VN-test-medium", downloader=downloader)
+
+    assert model.stat().st_size == 1_000_001
+    assert model.with_suffix(".onnx.json").read_text(encoding="utf-8") == "{}"
 
 
 def test_optional_f5_service_retries_transient_error_and_returns_wav(tmp_path: Path) -> None:

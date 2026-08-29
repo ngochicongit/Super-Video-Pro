@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from importlib.resources import files
 from pathlib import Path
 
@@ -29,7 +30,7 @@ class ServiceConfig(BaseModel):
     piper_model_path: Path = Path("models/piper/vi_VN-vais1000-medium.onnx")
     f5tts_url: str = "http://127.0.0.1:7860"
     whisperx_url: str = "http://127.0.0.1:8000"
-    whisperx_model: str = "large-v3"
+    whisperx_model: str = "small"
     whisperx_timeout_seconds: float = Field(default=300, gt=0)
     subtitle_top_safe_px: int = Field(default=180, ge=0)
     subtitle_bottom_safe_px: int = Field(default=300, ge=0)
@@ -66,6 +67,10 @@ def load_config(path: Path | None = None) -> AppConfig:
             config.pronunciation_path = Path(str(packaged))
     if not config.services.piper_model_path.is_absolute():
         config.services.piper_model_path = (config_path.parent.parent / config.services.piper_model_path).resolve()
+    if config.services.piper_executable == "piper":
+        bundled_piper = Path(sys.executable).with_name("piper.exe")
+        if bundled_piper.is_file():
+            config.services.piper_executable = str(bundled_piper)
     if not config.services.comfyui_workflow_dir.is_absolute():
         config.services.comfyui_workflow_dir = (config_path.parent.parent / config.services.comfyui_workflow_dir).resolve()
     if not config.services.comfyui_workflow_dir.is_dir():
@@ -78,6 +83,10 @@ def load_config(path: Path | None = None) -> AppConfig:
         config.services.ollama_url = os.environ["OLLAMA_URL"]
     if os.environ.get("OLLAMA_MODEL"):
         config.services.ollama_model = os.environ["OLLAMA_MODEL"]
+    if os.environ.get("WHISPERX_URL"):
+        config.services.whisperx_url = os.environ["WHISPERX_URL"]
+    if os.environ.get("WHISPERX_MODEL"):
+        config.services.whisperx_model = os.environ["WHISPERX_MODEL"]
     if os.environ.get("COMFYUI_CHECKPOINT"):
         config.services.comfyui_checkpoint = os.environ["COMFYUI_CHECKPOINT"]
     if os.environ.get("NEWSVID_FFMPEG"):

@@ -29,6 +29,21 @@ class FakeProvider:
         return self.payload
 
 
+class SequencedProvider(FakeProvider):
+    cache_key = "fake:script:repair:v1"
+
+    def __init__(self, payloads: list[dict[str, Any]]) -> None:
+        super().__init__(payloads[0])
+        self.payloads = payloads
+        self.prompts: list[str] = []
+
+    def generate_structured(self, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        self.prompts.append(prompt)
+        payload = self.payloads[min(self.calls, len(self.payloads) - 1)]
+        self.calls += 1
+        return payload
+
+
 def narration(words: int, *, vietnamese: bool = True) -> str:
     source = ("Trung tâm được công bố tại thành phố và sẽ đào tạo kỹ sư trong ba năm theo kế hoạch "
               if vietnamese else "The center announced a program that trains engineers over the next three years ")
@@ -119,17 +134,46 @@ def test_factual_segment_without_refs_is_rejected(tmp_path: Path) -> None:
         ScriptCoordinator(manager, FakeProvider(payload)).generate(project_id)
 
 
-def test_non_vietnamese_and_wrong_duration_are_rejected(tmp_path: Path) -> None:
+def test_candidate_schema_requires_non_empty_fact_refs() -> None:
+    from newsvid_brain.script_models import CandidateScript
+
+    schema = CandidateScript.model_json_schema()
+    segment = schema["$defs"]["CandidateSegment"]
+
+    assert "fact_refs" in segment["required"]
+    assert segment["properties"]["fact_refs"]["minItems"] == 1
+
+
+def test_validation_failure_is_reprompted_and_only_valid_script_is_saved(tmp_path: Path) -> None:
+    manager, project_id = project_with_facts(tmp_path)
+    invalid = valid_payload()
+    invalid["segments"][0]["fact_refs"] = []
+    provider = SequencedProvider([invalid, valid_payload()])
+
+    script = ScriptCoordinator(manager, provider).generate(project_id)
+
+    assert provider.calls == 2
+    assert "KẾT QUẢ TRƯỚC ĐÃ BỊ TỪ CHỐI" in provider.prompts[1]
+    assert all(segment.fact_refs for segment in script.segments)
+    assert (manager.project_dir(project_id) / "script.json").is_file()
+
+
+def test_non_vietnamese_is_rejected_and_wrong_duration_uses_safe_fallback(tmp_path: Path) -> None:
     manager, project_id = project_with_facts(tmp_path)
     english = valid_payload()
     for segment in english["segments"]:
         segment["narration"] = narration(50, vietnamese=False)
     with pytest.raises(SchemaValidationError, match="Vietnamese"):
         ScriptCoordinator(manager, FakeProvider(english)).generate(project_id)
-    with pytest.raises(SchemaValidationError, match="target window"):
-        ScriptCoordinator(manager, FakeProvider(valid_payload(30))).generate(
-            project_id, style=NewsStyle.DOCUMENTARY
-        )
+    provider = FakeProvider(valid_payload(30))
+    script = ScriptCoordinator(manager, provider).generate(
+        project_id, style=NewsStyle.DOCUMENTARY
+    )
+    checkpoint = CheckpointStore(manager.project_dir(project_id) / "checkpoint.json").load()
+    assert provider.calls == 3
+    assert 48 <= script.estimated_duration_seconds <= 72
+    assert all(segment.fact_refs for segment in script.segments)
+    assert checkpoint.stages[PipelineStage.SCRIPT].metadata["generation_mode"] == "deterministic-fallback"
 
 
 def test_cache_hit_skips_provider(tmp_path: Path) -> None:

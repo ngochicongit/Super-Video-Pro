@@ -21,7 +21,7 @@ services:
   piper_model_path: models/piper/vi_VN-vais1000-medium.onnx
   f5tts_url: http://127.0.0.1:7860
   whisperx_url: http://127.0.0.1:8000
-  whisperx_model: large-v3
+  whisperx_model: small
   whisperx_timeout_seconds: 300
   subtitle_top_safe_px: 180
   subtitle_bottom_safe_px: 300

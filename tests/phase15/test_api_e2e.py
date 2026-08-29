@@ -52,8 +52,10 @@ class DeterministicTTS:
 class DeterministicAlignment:
     name = "deterministic-align"
     cache_key = "deterministic-align-v1"
+    def __init__(self) -> None: self.calls = 0
 
     def align(self, audio_path: Path, text: str, *, language: str = "vi") -> list[WordTiming]:
+        self.calls += 1
         words = text.split(); step = .75 / max(1, len(words))
         return [WordTiming(word=word, start=index * step, end=(index + 1) * step)
                 for index, word in enumerate(words)]
@@ -82,9 +84,10 @@ def test_real_api_url_to_final_mp4_workflow(tmp_path: Path) -> None:
     ffmpeg = shutil.which("ffmpeg"); ffprobe = shutil.which("ffprobe")
     if not ffmpeg or not ffprobe or not EDGE.is_file():
         pytest.skip("FFmpeg/FFprobe/Edge unavailable")
+    alignment = DeterministicAlignment()
     client = TestClient(create_app(tmp_path / "projects", overrides={
         "llm": DeterministicLLM(), "tts": DeterministicTTS(),
-        "alignment": DeterministicAlignment(), "visual": OfflineVisual(),
+        "alignment": alignment, "visual": OfflineVisual(),
     }))
     project = client.post("/projects", json={"name": "API E2E"}).json(); project_id = project["id"]
     wait(client, client.post(f"/projects/{project_id}/ingest", json={"source": str(FIXTURE)}))
@@ -99,9 +102,11 @@ def test_real_api_url_to_final_mp4_workflow(tmp_path: Path) -> None:
         scene["visual"] = {"type": scene_type, "template": f"e2e-{scene_type}",
                            "provenance": {"source_type": "graphic"}, "data": {}}
     assert client.put(f"/projects/{project_id}/storyboard", json=board).status_code == 200
+    wait(client, client.post(f"/projects/{project_id}/quick-preview", json={}))
+    assert alignment.calls == 0
+    quick = client.get(f"/projects/{project_id}/outputs").json()["quick_preview"]
+    assert quick["exists"] and not quick["stale"]
     for scene in board["scenes"]:
-        wait(client, client.post(f"/projects/{project_id}/tts", json={"scene_id": scene["id"]}))
-        wait(client, client.post(f"/projects/{project_id}/visual", json={"scene_id": scene["id"]}))
         wait(client, client.post(f"/projects/{project_id}/scene", json={"scene_id": scene["id"]}))
     wait(client, client.post(f"/projects/{project_id}/preview", json={}))
 

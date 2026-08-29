@@ -26,7 +26,7 @@ class AlignmentProvider(Protocol):
 class WhisperXConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     base_url: str = "http://127.0.0.1:8000"
-    model: str = "large-v3"
+    model: str = "small"
     timeout_seconds: float = Field(default=300, gt=0)
     max_attempts: int = Field(default=3, ge=1, le=5)
 

@@ -14,6 +14,13 @@ def _normalized(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip().casefold()
 
 
+def _unwrap_article_evidence(value: str) -> str:
+    evidence = value.strip()
+    wrapped = re.fullmatch(r"<article>\s*(.*?)\s*</article>", evidence,
+                           flags=re.IGNORECASE | re.DOTALL)
+    return wrapped.group(1).strip() if wrapped else evidence
+
+
 class FactExtractor:
     def __init__(self, provider: LLMProvider) -> None:
         self.provider = provider
@@ -30,7 +37,10 @@ class FactExtractor:
         normalized_article = _normalized(article)
         facts: list[Fact] = []
         for index, candidate in enumerate(candidates.facts, 1):
-            if _normalized(candidate.evidence) not in normalized_article:
+            evidence = _unwrap_article_evidence(candidate.evidence)
+            if _normalized(evidence) not in normalized_article:
                 raise GroundingError(f"Evidence for candidate {index} is not present in article.md")
-            facts.append(Fact(id=f"fact_{index:03d}", **candidate.model_dump()))
+            payload = candidate.model_dump()
+            payload["evidence"] = evidence
+            facts.append(Fact(id=f"fact_{index:03d}", **payload))
         return FactSet(source=source, facts=facts)

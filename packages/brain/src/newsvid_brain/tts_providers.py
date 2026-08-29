@@ -89,7 +89,8 @@ class PiperProvider:
         try:
             result = self._runner(args, input=text.encode("utf-8"), stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, timeout=self.config.timeout_seconds,
-                                  check=False, shell=False)
+                                  check=False, shell=False,
+                                  env={**os.environ, "PYTHONIOENCODING": "utf-8"})
             if result.returncode != 0:
                 detail = result.stderr.decode("utf-8", errors="replace")[-500:]
                 raise TTSError(f"Piper exited with code {result.returncode}: {detail}")

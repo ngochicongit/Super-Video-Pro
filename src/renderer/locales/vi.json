@@ -24,7 +24,12 @@
     "runQa": "Chạy kiểm tra chất lượng",
     "saveScene": "Lưu cảnh",
     "refreshServices": "Kiểm tra lại dịch vụ",
-    "setupOllama": "Tự động cài Ollama và model nhẹ"
+    "setupOllama": "Tự động cài Ollama và model nhẹ",
+    "fixDependencies": "Tự sửa an toàn",
+    "saveModels": "Lưu lựa chọn model",
+    "createCompleteVideo": "Tạo video hoàn chỉnh",
+    "quickPreview": "Xem trước nhanh không phụ đề",
+    "captionedPreview": "Xem trước hoàn chỉnh có phụ đề"
   },
   "fields": {
     "scene": "Cảnh",
@@ -42,6 +47,37 @@
     "source": "Nguồn",
     "content": "Nội dung",
     "images": "Hình ảnh"
+  },
+  "modelSettings": {
+    "language": "Ngôn ngữ và kịch bản",
+    "llm": "Model LLM",
+    "voice": "Giọng đọc",
+    "provider": "Bộ máy giọng đọc",
+    "voiceModel": "Giọng hoặc model",
+    "captions": "Căn chỉnh phụ đề",
+    "whisperx": "Model WhisperX",
+    "images": "Tạo hình ảnh AI",
+    "checkpoint": "Checkpoint ComfyUI",
+    "detected": "Đã tự phát hiện các model đang dùng được.",
+    "offline": "Dịch vụ đang ngoại tuyến; đang giữ lựa chọn hiện tại."
+  },
+  "qa": {
+    "title": "Tình trạng chất lượng",
+    "description": "Kiểm tra dữ kiện, phân cảnh và bản video mới nhất hiện có.",
+    "ready": "Bản hiện tại đạt các kiểm tra khả dụng",
+    "needsAttention": "Có mục cần xử lý",
+    "checks": {
+      "fact_references": "Tham chiếu dữ kiện",
+      "scene_duration": "Thời lượng cảnh",
+      "duplicate_visuals": "Nguồn hình ảnh trùng lặp",
+      "preview_output": "Bản xem trước",
+      "final_render": "Video hoàn chỉnh",
+      "resolution": "Độ phân giải",
+      "fps": "Tốc độ khung hình",
+      "audio": "Âm thanh",
+      "ffmpeg_render": "Tệp kết xuất cuối",
+      "render_output": "Đầu ra video"
+    }
   },
   "messages": {
     "noSource": "Chưa nhập nguồn",
@@ -79,12 +115,21 @@
     "validate": "Kiểm tra chất lượng",
     "render": "Kết xuất hoàn chỉnh",
     "ollama-setup": "Thiết lập Ollama"
+    ,"quick-preview": "Xem trước nhanh"
   },
   "stages": {
     "queued": "Đang xếp hàng",
     "execute": "Đang xử lý",
     "verify": "Đang xác minh kết quả",
     "complete": "Đã hoàn tất",
+    "failed": "Đã dừng do lỗi",
+    "generate": "Đang tạo nội dung",
+    "fallback": "Đang rút gọn an toàn",
+    "persist": "Đang lưu kết quả",
+    "tts": "Đang tạo giọng đọc",
+    "align": "Đang căn chỉnh phụ đề",
+    "visuals": "Đang chuẩn bị hình ảnh",
+    "render": "Đang kết xuất cảnh",
     "checking": "Đang kiểm tra",
     "installing": "Đang cài đặt",
     "starting": "Đang khởi động",

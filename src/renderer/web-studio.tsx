@@ -25,11 +25,17 @@ type Job = {
   error?: string | null;
 };
 type ServiceStatus = {
-  name: string;
-  status: string;
-  detail: string;
+  id: string;
+  display_name: string;
+  state: string;
+  root_cause?: string | null;
+  detected?: string | null;
+  manual_fix: string;
   required: boolean;
 };
+type EnvironmentReport = {task:string;status:string;results:ServiceStatus[]};
+type ModelSettings = {ollama_model:string;tts_provider:"piper"|"f5tts";tts_voice:string;whisperx_model:string;comfyui_checkpoint:string};
+type ModelOptions = {ollama_models:string[];tts_providers:string[];tts_voices:string[];whisperx_models:string[];comfyui_checkpoints:string[];availability:Record<string,boolean>};
 export type Scene = {
   id: string;
   type: string;
@@ -101,6 +107,9 @@ export function WebStudio() {
     [sceneId, setSceneId] = useState(""),
     [job, setJob] = useState<Job>(),
     [pendingOperation, setPendingOperation] = useState<string>(),
+    [environmentTask, setEnvironmentTask] = useState("render"),
+    [modelSettings, setModelSettings] = useState<ModelSettings>(),
+    [modelOptions, setModelOptions] = useState<ModelOptions>(),
     [error, setError] = useState(""),
     [projectName, setProjectName] = useState(""),
     [articleSource, setArticleSource] = useState("");
@@ -147,6 +156,8 @@ export function WebStudio() {
   }, []);
   useEffect(() => {
     void loadProjects();
+    void request<ModelSettings>("/settings/models").then(setModelSettings).catch((reason) => setError(String(reason)));
+    void request<ModelOptions>("/settings/model-options").then(setModelOptions).catch((reason) => setError(String(reason)));
   }, [loadProjects]);
   useEffect(() => {
     if (project) void loadProject(project.id);
@@ -227,8 +238,8 @@ export function WebStudio() {
       if (["facts", "script"].includes(operation)) {
         const services = await request<ServiceStatus[]>("/services/status");
         setData((current) => ({ ...current, services }));
-        const ollama = services.find((service) => service.name === "Ollama");
-        if (!ollama || ollama.status !== "OK") {
+        const ollama = services.find((service) => service.id === "ollama");
+        if (!ollama || ollama.state !== "READY") {
           setPendingOperation(operation);
           setView("Services");
           setJob(
@@ -269,6 +280,16 @@ export function WebStudio() {
     } catch (reason) {
       setError(String(reason));
     }
+  }
+  async function saveModelSettings() {
+    if (!modelSettings) return;
+    setError("");
+    try {
+      setModelSettings(await request<ModelSettings>("/settings/models", {
+        method: "PUT", headers: {"content-type":"application/json"},
+        body: JSON.stringify(modelSettings),
+      }));
+    } catch (reason) { setError(String(reason)); }
   }
   function patchScene(
     patch: Partial<Scene>,
@@ -507,19 +528,32 @@ export function WebStudio() {
             )}
           </div>
         )}
+        {view === "Settings" && modelSettings && (
+          <div className="model-settings-grid">
+            <section><h3>{vi.modelSettings.language}</h3><label>{vi.modelSettings.llm}<select value={modelSettings.ollama_model} onChange={(event)=>setModelSettings({...modelSettings,ollama_model:event.target.value})}>{(modelOptions?.ollama_models??[modelSettings.ollama_model]).map(value=><option key={value}>{value}</option>)}</select></label><small>{modelOptions?.availability.ollama?vi.modelSettings.detected:vi.modelSettings.offline}</small></section>
+            <section><h3>{vi.modelSettings.voice}</h3><label>{vi.modelSettings.provider}<select value={modelSettings.tts_provider} onChange={(event)=>setModelSettings({...modelSettings,tts_provider:event.target.value as "piper"|"f5tts"})}><option value="piper">Piper cục bộ</option><option value="f5tts">F5-TTS service</option></select></label><label>{vi.modelSettings.voiceModel}<select value={modelSettings.tts_voice} onChange={(event)=>setModelSettings({...modelSettings,tts_voice:event.target.value})}>{(modelOptions?.tts_voices??[modelSettings.tts_voice]).map(value=><option key={value}>{value}</option>)}</select></label></section>
+            <section><h3>{vi.modelSettings.captions}</h3><label>{vi.modelSettings.whisperx}<select value={modelSettings.whisperx_model} onChange={(event)=>setModelSettings({...modelSettings,whisperx_model:event.target.value})}>{(modelOptions?.whisperx_models??[modelSettings.whisperx_model]).map(value=><option key={value}>{value}</option>)}</select></label><small>{modelOptions?.availability.whisperx?vi.modelSettings.detected:vi.modelSettings.offline}</small></section>
+            <section><h3>{vi.modelSettings.images}</h3><label>{vi.modelSettings.checkpoint}<select value={modelSettings.comfyui_checkpoint} onChange={(event)=>setModelSettings({...modelSettings,comfyui_checkpoint:event.target.value})}>{(modelOptions?.comfyui_checkpoints??[modelSettings.comfyui_checkpoint]).map(value=><option key={value}>{value}</option>)}</select></label><small>{modelOptions?.availability.comfyui?vi.modelSettings.detected:vi.modelSettings.offline}</small></section>
+            <button className="primary-workflow" disabled={busy} onClick={()=>void saveModelSettings()}>{vi.actions.saveModels}</button>
+          </div>
+        )}
         {view === "Preview" && (
           <>
-            <button
-              disabled={!project || busy}
-              onClick={() => void action("preview")}
-            >
-              {vi.actions.renderPreview}
-            </button>
+            <section className="workflow-launcher">
+              <span>QUY TRÌNH TỰ ĐỘNG</span><h3>Tạo video mà không cần đi từng tab</h3>
+              <p>Hệ thống tự dùng lại stage hợp lệ và chỉ chạy phần còn thiếu hoặc đã thay đổi.</p>
+              <div>
+                <button className="primary-workflow" disabled={!project||busy} onClick={()=>void action("render")}>{vi.actions.createCompleteVideo}</button>
+                <button disabled={!project||busy} onClick={()=>void action("quick-preview")}>{vi.actions.quickPreview}</button>
+                <button disabled={!project||busy} onClick={()=>void action("preview")}>{vi.actions.captionedPreview}</button>
+              </div>
+              <small>Preview nhanh không cần WhisperX. Preview hoàn chỉnh và video cuối có phụ đề nên cần WhisperX.</small>
+            </section>
+            {data.outputs?.quick_preview?.exists && !data.outputs.quick_preview.stale && (
+              <section className="preview-result"><h3>Preview nhanh</h3><video controls src={`${base}${data.outputs.quick_preview.media_url}?v=${encodeURIComponent(data.outputs.quick_preview.modified_at)}`} /></section>
+            )}
             {data.outputs?.preview?.exists && !data.outputs.preview.stale ? (
-              <video
-                controls
-                src={`${base}${data.outputs.preview.media_url}?v=${encodeURIComponent(data.outputs.preview.modified_at)}`}
-              />
+              <section className="preview-result"><h3>Preview có phụ đề</h3><video controls src={`${base}${data.outputs.preview.media_url}?v=${encodeURIComponent(data.outputs.preview.modified_at)}`} /></section>
             ) : (
               <p>
                 {data.outputs?.preview?.stale
@@ -527,53 +561,54 @@ export function WebStudio() {
                   : vi.messages.noPreview}
               </p>
             )}
-            <button
-              disabled={!project || busy}
-              onClick={() => void action("render")}
-            >
-              {vi.actions.finalRender}
-            </button>
             {data.outputs?.final?.exists && !data.outputs.final.stale && (
-              <video
-                controls
-                src={`${base}${data.outputs.final.media_url}?v=${encodeURIComponent(data.outputs.final.modified_at)}`}
-              />
+              <section className="preview-result"><h3>Video hoàn chỉnh</h3><video controls src={`${base}${data.outputs.final.media_url}?v=${encodeURIComponent(data.outputs.final.modified_at)}`} /></section>
             )}
             {data.outputs?.final?.stale && <p>{vi.messages.finalStale}</p>}
           </>
         )}
         {view === "QA" && (
-          <>
+          <section className="qa-panel">
+            <div><h3>{vi.qa.title}</h3><p>{vi.qa.description}</p></div>
             <button
               disabled={!project || busy}
               onClick={() => void action("validate")}
             >
               {vi.actions.runQa}
             </button>
-            <pre>{JSON.stringify(data.qa ?? vi.messages.qaPending, null, 2)}</pre>
-          </>
+            {data.qa ? <><div className={`qa-summary ${data.qa.status}`}>{data.qa.status === "pass" ? vi.qa.ready : vi.qa.needsAttention}</div><div className="qa-checks">{data.qa.checks.map((check:any)=><article key={check.name} data-status={check.status}><span>{check.status === "pass" ? "✓" : check.status === "not_run" ? "○" : "!"}</span><div><strong>{(vi.qa.checks as Record<string,string>)[check.name]??check.name}</strong>{check.detail&&<small>{check.detail}</small>}</div></article>)}</div>{data.qa.checks.some((check:any)=>check.name==="final_render"&&check.status==="not_run")&&<button className="primary-workflow" disabled={busy} onClick={()=>void action("render")}>{vi.actions.createCompleteVideo}</button>}</> : <p>{vi.messages.qaPending}</p>}
+          </section>
         )}
         {view === "Services" && (
           <>
+            <label className="environment-task">Tác vụ
+              <select value={environmentTask} onChange={(event) => setEnvironmentTask(event.target.value)}>
+                {['facts','script','visual','tts','alignment','scene','preview','render','build','test','ui-verify'].map((task) => <option key={task}>{task}</option>)}
+              </select>
+            </label>
             <button
               onClick={() =>
-                request("/services/status").then((value) =>
-                  setData((current) => ({ ...current, services: value })),
+                request<EnvironmentReport>(`/environment/dependencies?task=${environmentTask}`).then((value) =>
+                  setData((current) => ({ ...current, environment: value, services: value.results })),
                 )
               }
             >
               {vi.actions.refreshServices}
             </button>
+            <button disabled={busy} onClick={() => request<EnvironmentReport>(`/environment/dependencies?task=${environmentTask}&fix=true`).then((value) => setData((current) => ({ ...current, environment: value, services: value.results })))}>
+              {vi.actions.fixDependencies}
+            </button>
             <button disabled={busy} onClick={() => void setupOllama()}>
               {vi.actions.setupOllama}
             </button>
+            {data.environment && <p className="environment-summary">Trạng thái {data.environment.task}: <b>{data.environment.status}</b></p>}
             {Array.isArray(data.services) ? (
               <div className="studio-resource-grid">
                 {(data.services as ServiceStatus[]).map((service) => (
-                  <section key={service.name}>
-                    <h3>{service.name}</h3>
-                    <b>{service.status}</b>
-                    <p>{service.detail}</p>
+                  <section key={service.id} className={`dependency-card state-${service.state.toLowerCase()}`}>
+                    <h3>{service.display_name}</h3>
+                    <b>{service.state}</b>
+                    <p>{service.detected ?? service.root_cause ?? service.manual_fix}</p>
                   </section>
                 ))}
               </div>

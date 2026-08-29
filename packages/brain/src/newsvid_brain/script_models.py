@@ -24,7 +24,7 @@ class SegmentType(StrEnum):
 class CandidateSegment(StrictModel):
     type: SegmentType
     narration: str = Field(min_length=1)
-    fact_refs: list[str] = Field(default_factory=list)
+    fact_refs: list[str] = Field(min_length=1)
 
 
 class CandidateScript(StrictModel):

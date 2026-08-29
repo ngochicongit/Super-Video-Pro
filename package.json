@@ -1,9 +1,9 @@
 {
   "name": "super-video-pro",
-  "version": "1.12.1",
+  "version": "1.13.0",
   "packageManager": "pnpm@11.19.0",
   "private": true,
-  "description": "Local-first desktop video download manager",
+  "description": "Local-first desktop media and AI news production workspace",
   "author": "Super Video Pro",
   "main": "dist-electron/main/index.js",
   "type": "module",

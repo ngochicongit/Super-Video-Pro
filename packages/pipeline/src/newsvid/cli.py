@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .checkpoint import CheckpointStore
 from .config import load_config
-from .doctor import collect_status
+from .doctor import PreflightBlockedError, PreflightEngine, TASK_DEPENDENCIES
 from .project import ProjectManager
 from .schemas import PipelineStage, StageStatus
 from .ingestion import IngestionCoordinator
@@ -42,6 +42,9 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     doctor = commands.add_parser("doctor", help="Report local dependencies")
     doctor.add_argument("--strict", action="store_true", help="Fail when a required dependency is unavailable")
+    doctor.add_argument("--task", choices=sorted(TASK_DEPENDENCIES), default="render")
+    doctor.add_argument("--fix", action="store_true", help="Safely repair declared dependencies")
+    doctor.add_argument("--json", action="store_true", help="Print stable machine-readable report")
     ingest = commands.add_parser("ingest", help="Extract an article into a project")
     ingest.add_argument("source", help="Public HTTP(S) URL or local HTML fixture")
     ingest.add_argument("--project", dest="project_id", help="Existing project id")
@@ -100,10 +103,27 @@ def main(argv: list[str] | None = None) -> int:
     config = load_config(args.config)
     manager = ProjectManager(config.projects_dir)
     if args.command == "doctor":
-        statuses = collect_status(config)
-        for item in statuses:
-            print(f"{item.name:<12} {item.status:<16} {item.detail}")
-        return 1 if args.strict and any(item.required and item.status != "OK" for item in statuses) else 0
+        report = PreflightEngine(config).run(args.task, fix=args.fix)
+        if args.json:
+            print(report.model_dump_json(indent=2))
+        else:
+            print(f"{report.task}: {report.status}")
+            for item in report.results:
+                detail = item.detected or item.root_cause or ""
+                print(f"{item.id:<20} {item.state:<18} {detail}")
+                if item.fixed: print(f"{'':20} fixed: {', '.join(item.fixed)}")
+                if item.missing: print(f"{'':20} missing: {', '.join(item.missing)}")
+        return 1 if args.strict and not report.ready else 0
+    task_by_command = {"facts":"facts", "script":"script", "storyboard":"storyboard",
+                       "tts":"tts", "align":"alignment", "visuals":"visual",
+                       "preview":"preview", "render":"render", "render-article":"render"}
+    if args.command in task_by_command:
+        try:
+            directory = manager.project_dir(args.project_id)
+            CheckpointStore(directory / "checkpoint.json").reconcile_artifacts(directory)
+            PreflightEngine(config).require(task_by_command[args.command], fix=True)
+        except PreflightBlockedError as exc:
+            print(str(exc)); return 3
     if args.command == "ingest":
         coordinator = IngestionCoordinator(manager)
         try:

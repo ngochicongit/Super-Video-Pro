@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 
 from newsvid_brain import FactSet, LLMProvider
 from newsvid_brain.script_models import NewsScript, NewsStyle
@@ -19,7 +20,8 @@ class ScriptCoordinator:
         self.provider = provider
 
     def generate(self, project_id: str, *, target_duration: int = 60,
-                 style: NewsStyle = NewsStyle.BREAKING_NEWS) -> NewsScript:
+                 style: NewsStyle = NewsStyle.BREAKING_NEWS,
+                 progress: Callable[[float, str, str], None] | None = None) -> NewsScript:
         directory = self.projects.project_dir(project_id)
         self.projects.load(project_id)
         facts = load_model(directory / "facts.json", FactSet)
@@ -38,15 +40,19 @@ class ScriptCoordinator:
                 pass
         store.update(PipelineStage.SCRIPT, StageStatus.RUNNING, fingerprint=fingerprint)
         try:
-            script = ScriptGenerator(self.provider).generate(
-                facts, target_duration=target_duration, style=style
+            generator = ScriptGenerator(self.provider)
+            script = generator.generate(
+                facts, target_duration=target_duration, style=style, progress=progress
             )
+            if progress:
+                progress(0.88, "script:persist", "Đang lưu kịch bản đã xác minh")
             atomic_write_model(script_path, script)
             store.update(PipelineStage.SCRIPT, StageStatus.COMPLETED, fingerprint=fingerprint,
                          metadata={"style": style.value, "target_duration_seconds": target_duration,
                                    "estimated_duration_seconds": script.estimated_duration_seconds,
                                    "segment_count": len(script.segments),
                                    "prompt_version": SCRIPT_PROMPT_VERSION,
+                                   "generation_mode": generator.generation_mode,
                                    "provider": self.provider.cache_key})
             return script
         except Exception as exc:

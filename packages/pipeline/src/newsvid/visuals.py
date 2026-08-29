@@ -47,20 +47,21 @@ class VisualCoordinator:
         self.projects = projects
         self.provider = provider
 
-    def generate(self, project_id: str) -> VisualManifest:
+    def generate(self, project_id: str, *, scene_id: str | None = None) -> VisualManifest:
         directory = self.projects.project_dir(project_id)
         self.projects.load(project_id)
         storyboard_path = directory / "storyboard.json"
         storyboard = load_model(storyboard_path, Storyboard)
-        targets = [scene for scene in storyboard.scenes
-                   if scene.visual.provenance.source_type is SourceType.GENERATED
-                   and scene.visual.provenance.generator == "comfyui"]
+        all_targets = [scene for scene in storyboard.scenes
+                       if scene.visual.provenance.source_type is SourceType.GENERATED
+                       and scene.visual.provenance.generator == "comfyui"]
+        targets = [scene for scene in all_targets if scene_id is None or scene.id == scene_id]
         manifest_path = directory / "images" / "generated_manifest.json"
         try:
             previous = load_model(manifest_path, VisualManifest)
         except (OSError, ValueError):
             previous = VisualManifest()
-        target_ids = {scene.id for scene in targets}
+        target_ids = {scene.id for scene in all_targets}
         assets = {asset.scene_id: asset for asset in previous.assets if asset.scene_id in target_ids}
         failures: list[VisualFailure] = []
         requests = {scene.id: self._request(scene) for scene in targets}
@@ -128,9 +129,12 @@ class VisualCoordinator:
             if scene.id in by_scene:
                 scene.visual.provenance = by_scene[scene.id].provenance
         atomic_write_model(storyboard_path, updated)
-        store.update(PipelineStage.VISUALS, StageStatus.COMPLETED, fingerprint=stage_fingerprint,
+        remaining = {scene.id for scene in all_targets} - {asset.scene_id for asset in manifest.assets}
+        status = StageStatus.PENDING if scene_id is not None and remaining else StageStatus.COMPLETED
+        store.update(PipelineStage.VISUALS, status, fingerprint=stage_fingerprint,
                      metadata={"generated": generated, "cache_hits": cache_hits,
-                               "asset_count": len(manifest.assets)})
+                               "asset_count": len(manifest.assets),
+                               "remaining_scenes": sorted(remaining)})
         return manifest
 
     def _request(self, scene: object) -> VisualGenerationRequest:

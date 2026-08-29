@@ -19,6 +19,9 @@ vendor/*.zip
 .ui-refactor/latest.json
 .upstream/
 .venv/
+.services/
 projects/
+models/piper/*.onnx
+models/piper/*.onnx.json
 __pycache__/
 .pytest_cache/

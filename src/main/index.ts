@@ -12,6 +12,7 @@ import { JobManager } from "./jobs.js";
 import {ProductEvidence} from "./product-evidence.js";
 import {CompositionManager} from "./composition.js";
 import {BackendLifecycle} from "./backend-lifecycle.js";
+import {resolveTool} from "./tools.js";
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 let db:AppDatabase|undefined;
@@ -57,8 +58,9 @@ app.whenReady().then(async()=>{
   const packagedBackend=path.join(process.resourcesPath,"backend","newsvid-backend","newsvid-backend.exe");
   const backendCommand=process.env.NEWSVID_PYTHON??(app.isPackaged&&existsSync(packagedBackend)?packagedBackend:"python");
   process.env.NEWSVID_PROJECTS_DIR=process.env.NEWSVID_PROJECTS_DIR??path.join(app.getPath("userData"),"newsvid-projects");
-  process.env.NEWSVID_FFMPEG=process.env.NEWSVID_FFMPEG??path.join(process.env.SVP_TOOL_DIR,"ffmpeg.exe");
-  process.env.NEWSVID_FFPROBE=process.env.NEWSVID_FFPROBE??path.join(process.env.SVP_TOOL_DIR,"ffprobe.exe");
+  process.env.NEWSVID_FFMPEG=process.env.NEWSVID_FFMPEG??resolveTool("ffmpeg");
+  process.env.NEWSVID_FFPROBE=process.env.NEWSVID_FFPROBE??resolveTool("ffprobe");
+  // The backend marks this Electron executable with ELECTRON_RUN_AS_NODE only for Node subprocesses.
   process.env.NEWSVID_NODE=process.env.NEWSVID_NODE??process.execPath;
   process.env.NEWSVID_NODE_ROOT=process.env.NEWSVID_NODE_ROOT??app.getAppPath();
   backend=new BackendLifecycle({url:process.env.NEWSVID_API_URL??"http://127.0.0.1:8787",command:backendCommand,args:backendCommand===packagedBackend?[]:undefined,cwd:app.isPackaged?process.resourcesPath:repositoryRoot});

@@ -98,6 +98,28 @@ def test_non_verbatim_evidence_is_rejected(tmp_path: Path) -> None:
         FactsCoordinator(manager, FakeProvider(payload)).extract(project_id)
 
 
+def test_article_wrapper_is_removed_before_grounding_and_persistence(tmp_path: Path) -> None:
+    manager, project_id = project_with_article(tmp_path)
+    payload = valid_payload()
+    original = payload["facts"][0]["evidence"]
+    payload["facts"][0]["evidence"] = f"<article>\n{original}\n</article>"
+
+    result = FactsCoordinator(manager, FakeProvider(payload)).extract(project_id)
+
+    assert result.facts[0].evidence == original
+    saved = json.loads((manager.project_dir(project_id) / "facts.json").read_text(encoding="utf-8"))
+    assert saved["facts"][0]["evidence"] == original
+
+
+def test_article_wrapper_does_not_make_ungrounded_evidence_valid(tmp_path: Path) -> None:
+    manager, project_id = project_with_article(tmp_path)
+    payload = valid_payload()
+    payload["facts"][0]["evidence"] = "<article>Nội dung không có trong bài</article>"
+
+    with pytest.raises(GroundingError):
+        FactsCoordinator(manager, FakeProvider(payload)).extract(project_id)
+
+
 def test_invalid_ollama_json_is_safe() -> None:
     transport = httpx.MockTransport(lambda request: httpx.Response(
         200, request=request, json={"message": {"content": "```json not-valid ```"}}

@@ -12,7 +12,8 @@ import pytest
 from newsvid.article_renderer import FFmpegArticleRenderer
 from newsvid.final_assembler import FinalAssembler
 from newsvid.motion_renderer import (HyperFramesChromiumRenderer, SceneRenderer,
-                                     motion_input_for_scene)
+                                     motion_input_for_scene,
+                                     motion_render_timeout_seconds)
 from newsvid_brain import (MotionTemplate, MotionTemplateInput, SceneType,
                            SourceType, StoryboardScene, VisualPlan,
                            VisualProvenance)
@@ -35,6 +36,12 @@ CASES = {
     MotionTemplate.QUOTE: {"quote": "Dữ liệu phải chính xác.", "author": "Nguồn bài viết"},
     MotionTemplate.OUTRO: {"headline": "Cảm ơn bạn đã theo dõi", "source": "Super Video Pro"},
 }
+
+
+def test_motion_render_timeout_scales_for_real_vertical_scenes() -> None:
+    assert motion_render_timeout_seconds(1) == 120
+    assert motion_render_timeout_seconds(11.6) == pytest.approx(139.2)
+    assert motion_render_timeout_seconds(100) == 600
 
 
 @pytest.mark.parametrize(("template", "data"), CASES.items())
