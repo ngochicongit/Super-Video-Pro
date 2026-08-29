@@ -25,12 +25,14 @@ from .persistence import load_model
 from newsvid_brain import Storyboard, FactSet
 from .checkpoint import CheckpointStore
 from .schemas import PipelineStage, StageStatus
+from .alignment import AlignmentCoordinator
+from newsvid_brain import WhisperXConfig, WhisperXProvider, SubtitleLayout
 
-def create_app(projects_dir: Path | None = None):
+def create_app(projects_dir: Path | None = None, overrides: dict[str, object] | None = None):
     from fastapi import FastAPI, HTTPException
     from fastapi.responses import FileResponse, PlainTextResponse
     from fastapi.middleware.cors import CORSMiddleware
-    config = load_config(); manager = ProjectManager(projects_dir or config.projects_dir)
+    config = load_config(); manager = ProjectManager(projects_dir or config.projects_dir); overrides = overrides or {}
     app = FastAPI(title="NewsVid API", version="0.15.0")
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     @app.get("/health")
@@ -132,7 +134,7 @@ def create_app(projects_dir: Path | None = None):
         with jobs_lock: return [dict(j) for j in jobs.values() if j["project_id"] == project_id]
     @app.post("/projects/{project_id}/{operation}")
     def operation(project_id: str, operation: str, body: dict | None = None):
-        if operation not in {"ingest", "facts", "script", "storyboard", "tts", "visual", "scene", "preview", "render", "validate"}: raise HTTPException(404, "Unknown operation")
+        if operation not in {"ingest", "facts", "script", "storyboard", "tts", "align", "visual", "scene", "preview", "render", "validate"}: raise HTTPException(404, "Unknown operation")
         manager.load(project_id)
         selected_scene_id = str((body or {}).get("scene_id", ""))
         if operation in {"tts", "visual", "scene"}:
@@ -151,17 +153,27 @@ def create_app(projects_dir: Path | None = None):
                 return IngestionCoordinator(manager).ingest_url(source, project_id=project_id).model_dump(mode="json")
             return run_job(project_id, operation, ingest)
         if operation == "storyboard": return run_job(project_id, operation, lambda: StoryboardCoordinator(manager).build(project_id).model_dump(mode="json"))
-        provider = OllamaProvider(OllamaConfig(base_url=config.services.ollama_url, model=config.services.ollama_model, temperature=config.services.ollama_temperature, timeout_seconds=config.services.ollama_timeout_seconds, max_attempts=config.services.ollama_max_attempts))
+        provider = overrides.get("llm") or OllamaProvider(OllamaConfig(base_url=config.services.ollama_url, model=config.services.ollama_model, temperature=config.services.ollama_temperature, timeout_seconds=config.services.ollama_timeout_seconds, max_attempts=config.services.ollama_max_attempts))
         if operation == "facts": return run_job(project_id, operation, lambda: FactsCoordinator(manager, provider).extract(project_id).model_dump(mode="json"))
         if operation == "script":
             duration = int((body or {}).get("duration", 60)); style = NewsStyle(str((body or {}).get("style", NewsStyle.BREAKING_NEWS.value)))
             return run_job(project_id, operation, lambda: ScriptCoordinator(manager, provider).generate(project_id, target_duration=duration, style=style).model_dump(mode="json"))
         if operation == "tts":
             voice = config.services.tts_voice
-            tts = PiperProvider(PiperConfig(executable=config.services.piper_executable, model_path=config.services.piper_model_path, voice_name=voice, speed=config.services.tts_speed, timeout_seconds=config.services.tts_timeout_seconds))
-            return run_job(project_id, operation, lambda: TTSCoordinator(manager, tts, load_pronunciation(config.pronunciation_path), voice=voice).generate(project_id).model_dump(mode="json"))
+            tts = overrides.get("tts") or PiperProvider(PiperConfig(executable=config.services.piper_executable, model_path=config.services.piper_model_path, voice_name=voice, speed=config.services.tts_speed, timeout_seconds=config.services.tts_timeout_seconds))
+            def generate_tts_chain():
+                audio = TTSCoordinator(manager, tts, load_pronunciation(config.pronunciation_path), voice=voice).generate(project_id)
+                aligner = overrides.get("alignment") or WhisperXProvider(WhisperXConfig(base_url=config.services.whisperx_url, model=config.services.whisperx_model, timeout_seconds=config.services.whisperx_timeout_seconds))
+                layout = SubtitleLayout(top_safe_px=config.services.subtitle_top_safe_px, bottom_safe_px=config.services.subtitle_bottom_safe_px, max_words_per_line=config.services.subtitle_max_words_per_line)
+                words, report = AlignmentCoordinator(manager, aligner, layout).generate(project_id)
+                return {"audio": audio.model_dump(mode="json"), "words": words.model_dump(mode="json"), "captions": report.model_dump(mode="json")}
+            return run_job(project_id, operation, generate_tts_chain)
+        if operation == "align":
+            aligner = overrides.get("alignment") or WhisperXProvider(WhisperXConfig(base_url=config.services.whisperx_url, model=config.services.whisperx_model, timeout_seconds=config.services.whisperx_timeout_seconds))
+            layout = SubtitleLayout(top_safe_px=config.services.subtitle_top_safe_px, bottom_safe_px=config.services.subtitle_bottom_safe_px, max_words_per_line=config.services.subtitle_max_words_per_line)
+            return run_job(project_id, operation, lambda: {"words": AlignmentCoordinator(manager, aligner, layout).generate(project_id)[0].model_dump(mode="json")})
         if operation == "visual":
-            visual = HTTPComfyUIProvider(base_url=config.services.comfyui_url, checkpoint=config.services.comfyui_checkpoint, workflow_dir=config.services.comfyui_workflow_dir, timeout_seconds=config.services.comfyui_timeout_seconds, poll_interval_seconds=config.services.comfyui_poll_interval_seconds)
+            visual = overrides.get("visual") or HTTPComfyUIProvider(base_url=config.services.comfyui_url, checkpoint=config.services.comfyui_checkpoint, workflow_dir=config.services.comfyui_workflow_dir, timeout_seconds=config.services.comfyui_timeout_seconds, poll_interval_seconds=config.services.comfyui_poll_interval_seconds)
             def generate_visuals():
                 manifest = VisualCoordinator(manager, visual).generate(project_id)
                 if manifest.failures:
