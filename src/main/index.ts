@@ -10,9 +10,11 @@ import { registerIpc } from "./ipc.js";
 import { JobManager } from "./jobs.js";
 import {ProductEvidence} from "./product-evidence.js";
 import {CompositionManager} from "./composition.js";
+import {BackendLifecycle} from "./backend-lifecycle.js";
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 let db:AppDatabase|undefined;
+let backend:BackendLifecycle|undefined;
 if(process.env.SVP_UI_AUDIT_PROFILE)app.setPath("userData",process.env.SVP_UI_AUDIT_PROFILE);
 
 async function createWindow(){
@@ -39,6 +41,8 @@ async function createWindow(){
 app.whenReady().then(async()=>{
   if(process.env.SVP_BROWSER_SMOKE_OUTPUT){try{await runBrowserSmoke(process.env.SVP_BROWSER_SMOKE_OUTPUT);app.quit();}catch(error){await fs.writeFile(process.env.SVP_BROWSER_SMOKE_OUTPUT,JSON.stringify({error:error instanceof Error?error.stack:String(error)},null,2));app.exit(1);}return;}
   process.env.SVP_TOOL_DIR=path.join(app.getPath("userData"),"tools");
+  backend=new BackendLifecycle({url:process.env.NEWSVID_API_URL??"http://127.0.0.1:8787",command:process.env.NEWSVID_PYTHON??"python",cwd:path.join(here,"../..")});
+  try{await backend.start();}catch(error){console.error("NewsVid backend startup failed",error);app.quit();return;}
   if(!process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM)process.env.SVP_UPDATE_ED25519_PUBLIC_KEY_PEM=await fs.readFile(path.join(app.getAppPath(),"assets","update-public.pem"),"utf8");
   db=new AppDatabase(app.getPath("userData"));const jobs=new JobManager(db);const diagnostics=new Diagnostics(path.join(app.getPath("userData"),"logs"),jobs.settings().logRetentionDays);diagnostics.write("info","app.start",{version:app.getVersion(),platform:process.platform});
   const evidence=new ProductEvidence(db);const compositions=new CompositionManager(db,evidence,()=>jobs.settings().collectProductEvidence,()=>jobs.settings().historyRetentionDays);const updater=new AppUpdater(app.getVersion());const notified=new Set<string>();const loggedState=new Map<string,string>();
@@ -47,4 +51,4 @@ app.whenReady().then(async()=>{
   registerIpc(jobs,diagnostics,updater,evidence,compositions);await createWindow();app.on("activate",()=>{if(BrowserWindow.getAllWindows().length===0)void createWindow();});
 });
 app.on("window-all-closed",()=>{if(!process.env.SVP_BROWSER_SMOKE_OUTPUT&&process.platform!=="darwin")app.quit();});
-app.on("before-quit",()=>db?.close());
+app.on("before-quit",()=>{void backend?.stop();db?.close();});

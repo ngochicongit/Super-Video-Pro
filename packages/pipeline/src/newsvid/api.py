@@ -67,7 +67,7 @@ def create_app(projects_dir: Path | None = None):
     def project_jobs(project_id: str): return [j for j in jobs.values() if j["project_id"] == project_id]
     @app.post("/projects/{project_id}/{operation}")
     def operation(project_id: str, operation: str, body: dict | None = None):
-        if operation not in {"generate", "scene", "preview", "render", "validate"}: raise HTTPException(404, "Unknown operation")
+        if operation not in {"ingest", "facts", "script", "storyboard", "tts", "visual", "scene", "preview", "render", "validate"}: raise HTTPException(404, "Unknown operation")
         manager.load(project_id)
         if operation == "validate": return run_job(project_id, operation, lambda: QACoordinator(manager, FinalAssembler()).run(project_id))
         if operation == "ingest":
@@ -96,5 +96,11 @@ def create_app(projects_dir: Path | None = None):
             renderer = VideoRenderCoordinator(manager, ArticleImageCache(max_bytes=config.services.image_max_bytes), SceneRenderer(FFmpegArticleRenderer(ffmpeg=config.services.ffmpeg_executable, ffprobe=config.services.ffprobe_executable), HyperFramesChromiumRenderer(repository_root=root, node=config.services.node_executable, ffmpeg=config.services.ffmpeg_executable, chromium=config.services.chromium_executable)), FinalAssembler(ffmpeg=config.services.ffmpeg_executable, ffprobe=config.services.ffprobe_executable))
             transition = TransitionConfig()
             return run_job(project_id, operation, lambda: (renderer.preview(project_id, transition=transition) if operation == "preview" else renderer.render(project_id, transition=transition)).model_dump(mode="json"))
+        if operation == "scene":
+            scene_id = str((body or {}).get("scene_id", ""))
+            if not scene_id: raise HTTPException(422, "scene_id is required")
+            root = Path(__file__).resolve().parents[4]
+            renderer = VideoRenderCoordinator(manager, ArticleImageCache(max_bytes=config.services.image_max_bytes), SceneRenderer(FFmpegArticleRenderer(ffmpeg=config.services.ffmpeg_executable, ffprobe=config.services.ffprobe_executable), HyperFramesChromiumRenderer(repository_root=root, node=config.services.node_executable, ffmpeg=config.services.ffmpeg_executable, chromium=config.services.chromium_executable)), FinalAssembler(ffmpeg=config.services.ffmpeg_executable, ffprobe=config.services.ffprobe_executable))
+            return run_job(project_id, operation, lambda: renderer.render_scene(project_id, scene_id).model_dump(mode="json"))
         raise HTTPException(501, f"Operation {operation} is not wired to a real coordinator yet")
     return app

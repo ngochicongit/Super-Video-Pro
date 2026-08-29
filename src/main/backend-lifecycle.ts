@@ -1,0 +1,9 @@
+import {spawn,type ChildProcess} from "node:child_process";
+import http from "node:http";
+export type BackendLifecycleOptions={url:string;command?:string;args?:string[];cwd?:string;timeoutMs?:number;pollMs?:number;spawnProcess?:(command:string,args:string[],options:object)=>ChildProcess};
+export class BackendLifecycle{private child?:ChildProcess;private owned=false;private opts:BackendLifecycleOptions;constructor(opts:BackendLifecycleOptions){this.opts={timeoutMs:10000,pollMs:150,...opts};}
+  private probe(){return new Promise<boolean>(resolve=>{const req=http.get(`${this.opts.url}/health`,res=>{res.resume();resolve(res.statusCode===200);});req.on("error",()=>resolve(false));req.setTimeout(800,()=>{req.destroy();resolve(false);});});}
+  async start(){if(await this.probe())return {ready:true,owned:false};const command=this.opts.command??"python";const args=this.opts.args??["-m","uvicorn","newsvid.api:create_app","--factory","--host","127.0.0.1","--port","8787"];const spawnProcess=this.opts.spawnProcess??((c,a,o)=>spawn(c,a,{...o,windowsHide:true}));this.child=spawnProcess(command,args,{cwd:this.opts.cwd,stdio:["ignore","pipe","pipe"]});this.owned=true;let output="";this.child.stdout?.on("data",d=>{output+=String(d);});this.child.stderr?.on("data",d=>{output+=String(d);});const deadline=Date.now()+(this.opts.timeoutMs??10000);while(Date.now()<deadline){if(this.child.exitCode!==null)throw new Error(`Backend exited before readiness: ${output}`);if(await this.probe())return {ready:true,owned:true};await new Promise(r=>setTimeout(r,this.opts.pollMs));}throw new Error(`Backend readiness timeout: ${output}`);}
+  async stop(){if(!this.owned||!this.child)return;const child=this.child;this.child=undefined;this.owned=false;if(child.exitCode===null)child.kill();}
+  get ownedByElectron(){return this.owned;}
+}

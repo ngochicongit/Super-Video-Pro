@@ -129,6 +129,16 @@ class VideoRenderCoordinator:
                          error=f"{type(exc).__name__}: {exc}")
             raise
 
+    def render_scene(self, project_id: str, scene_id: str) -> RenderedScene:
+        directory, _, rendered, _, _ = self._render_scenes(project_id, transition=TransitionConfig())
+        for scene in rendered:
+            if scene.scene_id == scene_id:
+                path = directory / scene.video_path
+                if not path.is_file() or path.stat().st_size == 0:
+                    raise RenderError(f"Scene output is missing or empty: {scene_id}")
+                return scene
+        raise RenderError(f"Unknown storyboard scene: {scene_id}")
+
     def _render_scenes(self, project_id: str, *, transition: TransitionConfig
                        ) -> tuple[Path, Storyboard, list[RenderedScene], list[ImageAsset], str]:
         directory = self.projects.project_dir(project_id)
