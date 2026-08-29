@@ -6,12 +6,22 @@ from .doctor import collect_status
 from .qa import QACoordinator
 from .final_assembler import FinalAssembler
 import json
+import threading, uuid
+from datetime import datetime, timezone
 from .persistence import atomic_write_text
 
 def create_app(projects_dir: Path | None = None):
     from fastapi import FastAPI, HTTPException
     config = load_config(); manager = ProjectManager(projects_dir or config.projects_dir)
     app = FastAPI(title="NewsVid API", version="0.15.0")
+    jobs: dict[str, dict] = {}
+    def run_job(project_id: str, operation: str, task):
+        job_id = str(uuid.uuid4()); now = datetime.now(timezone.utc).isoformat(); jobs[job_id] = {"job_id": job_id, "project_id": project_id, "operation": operation, "status": "queued", "progress": 0, "current_stage": operation, "message": "Queued", "error": None, "created_at": now, "started_at": None, "completed_at": None}
+        def worker():
+            item = jobs[job_id]; item.update(status="running", started_at=datetime.now(timezone.utc).isoformat(), message="Running")
+            try: item["result"] = task(); item.update(status="completed", progress=1, message="Completed", completed_at=datetime.now(timezone.utc).isoformat())
+            except Exception as exc: item.update(status="failed", error=f"{type(exc).__name__}: {exc}", message="Failed", completed_at=datetime.now(timezone.utc).isoformat())
+        threading.Thread(target=worker, daemon=True).start(); return jobs[job_id]
     @app.get("/projects")
     def projects(): return [p.model_dump(mode="json") for p in manager.list()]
     @app.post("/projects", status_code=201)
@@ -35,10 +45,16 @@ def create_app(projects_dir: Path | None = None):
         return body
     @app.get("/services/status")
     def services(): return [s.__dict__ for s in collect_status(config)]
+    @app.get("/jobs/{job_id}")
+    def job(job_id: str):
+        if job_id not in jobs: raise HTTPException(404, "Job not found")
+        return jobs[job_id]
+    @app.get("/projects/{project_id}/jobs")
+    def project_jobs(project_id: str): return [j for j in jobs.values() if j["project_id"] == project_id]
     @app.post("/projects/{project_id}/{operation}")
     def operation(project_id: str, operation: str):
         if operation not in {"generate", "scene", "preview", "render", "validate"}: raise HTTPException(404, "Unknown operation")
         manager.load(project_id)
-        if operation == "validate": return QACoordinator(manager, FinalAssembler()).run(project_id)
-        return {"project_id": project_id, "operation": operation, "status": "accepted"}
+        if operation == "validate": return run_job(project_id, operation, lambda: QACoordinator(manager, FinalAssembler()).run(project_id))
+        raise HTTPException(501, f"Operation {operation} is not wired to a real coordinator yet")
     return app

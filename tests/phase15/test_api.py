@@ -8,4 +8,6 @@ def test_projects_and_service_api(tmp_path):
     project_id = made.json()["id"]
     assert client.get("/projects").status_code == 200
     assert client.get(f"/projects/{project_id}").status_code == 200
-    assert client.post(f"/projects/{project_id}/render").json()["status"] == "accepted"
+    job = client.post(f"/projects/{project_id}/validate").json()
+    assert job["status"] in {"queued", "running", "completed"}
+    assert client.get(f"/jobs/{job['job_id']}").status_code == 200
