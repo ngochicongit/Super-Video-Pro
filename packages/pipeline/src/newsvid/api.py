@@ -11,6 +11,9 @@ from datetime import datetime, timezone
 from .persistence import atomic_write_text
 from .ingestion import IngestionCoordinator
 from .storyboards import StoryboardCoordinator
+from newsvid_brain import OllamaConfig, OllamaProvider, NewsStyle
+from .facts import FactsCoordinator
+from .scripts import ScriptCoordinator
 
 def create_app(projects_dir: Path | None = None):
     from fastapi import FastAPI, HTTPException
@@ -69,5 +72,10 @@ def create_app(projects_dir: Path | None = None):
                 return IngestionCoordinator(manager).ingest_url(source, project_id=project_id).model_dump(mode="json")
             return run_job(project_id, operation, ingest)
         if operation == "storyboard": return run_job(project_id, operation, lambda: StoryboardCoordinator(manager).build(project_id).model_dump(mode="json"))
+        provider = OllamaProvider(OllamaConfig(base_url=config.services.ollama_url, model=config.services.ollama_model, temperature=config.services.ollama_temperature, timeout_seconds=config.services.ollama_timeout_seconds, max_attempts=config.services.ollama_max_attempts))
+        if operation == "facts": return run_job(project_id, operation, lambda: FactsCoordinator(manager, provider).extract(project_id).model_dump(mode="json"))
+        if operation == "script":
+            duration = int((body or {}).get("duration", 60)); style = NewsStyle(str((body or {}).get("style", NewsStyle.BREAKING_NEWS.value)))
+            return run_job(project_id, operation, lambda: ScriptCoordinator(manager, provider).generate(project_id, target_duration=duration, style=style).model_dump(mode="json"))
         raise HTTPException(501, f"Operation {operation} is not wired to a real coordinator yet")
     return app
