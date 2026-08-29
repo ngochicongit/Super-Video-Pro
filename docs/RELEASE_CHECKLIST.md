@@ -24,6 +24,8 @@
 - [x] Installer SHA-256: `BD5197E005777273EA0DD687B731F4DFBB6EC98B089C9B47CB3ADC7503314D15`.
 - [x] Clean isolated install, packaged application launch, backend `/health` response and silent uninstall pass.
 - [x] Authenticode checked explicitly: installer is unsigned and the limitation is disclosed in the release notes.
-- [ ] GitHub Actions and published release evidence are recorded after the tag workflow completes.
+- [x] GitHub Actions release run `33267189965` passed from tag commit `2e107719bd219b861f2db3a089758b0dcfa84e9c`.
+- [x] GitHub Release `v1.13.0` published with installer, blockmap and `SHA256SUMS.txt`.
+- [x] Published installer: 259,056,522 bytes; SHA-256 `1386bc442dbcb99bffb7a87aa2a90a6c49b93fa853a7eeaad5f77a2a42565fb2`.
 
-The local V1.13.0 candidate passes every locally executable release gate. External publication is intentionally not claimed until GitHub authentication, protected-branch checks and the tag release workflow complete.
+V1.13.0 passes the local and protected GitHub release gates and is published as a stable release. The installer remains unsigned, as disclosed in the release notes.
