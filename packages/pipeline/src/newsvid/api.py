@@ -14,6 +14,8 @@ from .storyboards import StoryboardCoordinator
 from newsvid_brain import OllamaConfig, OllamaProvider, NewsStyle
 from .facts import FactsCoordinator
 from .scripts import ScriptCoordinator
+from .tts import TTSCoordinator
+from newsvid_brain import PiperConfig, PiperProvider, load_pronunciation
 
 def create_app(projects_dir: Path | None = None):
     from fastapi import FastAPI, HTTPException
@@ -77,5 +79,9 @@ def create_app(projects_dir: Path | None = None):
         if operation == "script":
             duration = int((body or {}).get("duration", 60)); style = NewsStyle(str((body or {}).get("style", NewsStyle.BREAKING_NEWS.value)))
             return run_job(project_id, operation, lambda: ScriptCoordinator(manager, provider).generate(project_id, target_duration=duration, style=style).model_dump(mode="json"))
+        if operation == "tts":
+            voice = config.services.tts_voice
+            tts = PiperProvider(PiperConfig(executable=config.services.piper_executable, model_path=config.services.piper_model_path, voice_name=voice, speed=config.services.tts_speed, timeout_seconds=config.services.tts_timeout_seconds))
+            return run_job(project_id, operation, lambda: TTSCoordinator(manager, tts, load_pronunciation(config.pronunciation_path), voice=voice).generate(project_id).model_dump(mode="json"))
         raise HTTPException(501, f"Operation {operation} is not wired to a real coordinator yet")
     return app
