@@ -70,6 +70,27 @@ def runtime() -> HyperFramesChromiumRenderer:
     return HyperFramesChromiumRenderer(repository_root=ROOT, chromium=EDGE)
 
 
+def test_motion_runner_decodes_cross_platform_output_as_utf8(tmp_path: Path) -> None:
+    calls: list[dict[str, object]] = []
+
+    def runner(*_args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(kwargs)
+        (tmp_path / "motion.mp4").write_bytes(b"video")
+        return subprocess.CompletedProcess([], 0, stdout=json.dumps({
+            "engine": "html-video-playwright-hyperframes-adapter",
+        }), stderr="")
+
+    chromium = tmp_path / "edge.exe"; chromium.write_bytes(b"edge")
+    engine = HyperFramesChromiumRenderer(repository_root=ROOT, chromium=chromium, runner=runner)
+    spec = MotionTemplateInput(template=MotionTemplate.HOOK, duration_seconds=.35,
+                               width=320, height=568, fps=10,
+                               data={"headline": "TIN MỚI", "subhead": "Việt Nam"})
+    engine.render(spec, tmp_path / "motion.html", tmp_path / "motion.mp4")
+
+    assert calls[0]["encoding"] == "utf-8"
+    assert calls[0]["errors"] == "replace"
+
+
 @pytest.mark.acceptance
 @pytest.mark.parametrize(("template", "data"), CASES.items())
 def test_every_template_renders_independently_in_chromium(template: MotionTemplate,
